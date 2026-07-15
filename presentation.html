@@ -103,7 +103,7 @@ a.btn{display:inline-block;margin-top:26px;background:var(--accent);color:#fff;t
 
 <!-- 4 Phase II -->
 <section class="slide">
-  <span class="phase-tag p2">Phase II — Analyse Data (แผนงานถัดไป)</span>
+  <span class="phase-tag p2">Phase II — Analyse Data (เริ่มดำเนินการแล้ว: Routing + Vehicle Advisory)</span>
   <h2>วิเคราะห์ข้อมูลเพื่อการตัดสินใจ</h2>
   <div class="flow">
     <div class="step"><div class="num">1</div><h4>แบบจำลองการไหลของน้ำ</h4><p>จำลองน้ำท่วมที่รอบปีการเกิดซ้ำ Tr2, Tr5, Tr10, Tr25, Tr50, Tr100 ได้ความลึกและความเร็วการไหลรายจุด</p></div>
@@ -141,7 +141,7 @@ a.btn{display:inline-block;margin-top:26px;background:var(--accent);color:#fff;t
   <div class="kicker">เริ่มใช้งาน</div>
   <h2>สำรวจแผนที่ Phase I ได้แล้ววันนี้</h2>
   <p class="lead">เว็บแอปแสดงข้อมูลทุกชั้นบนแผนที่ interactive — เปิด/ปิดชั้นข้อมูล เลือกปีน้ำท่วม สลับแผนที่ถนน/ภาพดาวเทียม และคลิกดูรายละเอียดแต่ละตำแหน่ง</p>
-  <a class="btn" href="index.html">🗺️ เปิดเว็บแอปแผนที่ →</a>
+  <a class="btn" href="index.html" target="_top">🗺️ เปิดเว็บแอปแผนที่ →</a>
   <p class="small">โครงการวิจัยเพื่อสนับสนุน อสม. จังหวัดปทุมธานี · Phase I: Big Data Collection · อัปเดตกรกฎาคม 2569</p>
 </section>
 
@@ -156,7 +156,4 @@ const dots=document.getElementById('dots');
 slides.forEach((s,i)=>{const d=document.createElement('div');d.className='dot'+(i===0?' on':'');d.onclick=()=>show(i);dots.appendChild(d);});
 function show(i){cur=(i+slides.length)%slides.length;slides.forEach((s,j)=>s.classList.toggle('active',j===cur));[...dots.children].forEach((d,j)=>d.classList.toggle('on',j===cur));}
 function go(d){show(cur+d);}
-document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key===' ')go(1);if(e.key==='ArrowLeft')go(-1);});
-</script>
-</body>
-</html>
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key===' ')go(

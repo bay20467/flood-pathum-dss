@@ -6,20 +6,23 @@
 <title>ระบบสนับสนุนการตัดสินใจ อสม. — น้ำท่วมปทุมธานี</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.1.0/turf.min.js"></script>
 <style>
-:root{--navy:#1a3a5c;--blue:#2f6db3;--light:#eaf2fa;--accent:#e8604c;}
+:root{--navy:#1a3a5c;--blue:#2f6db3;--light:#eaf2fa;--accent:#e8604c;--green:#00b894;}
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI','Sarabun',Tahoma,sans-serif;}
 body{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
 header{background:var(--navy);color:#fff;padding:0 16px;display:flex;align-items:center;gap:14px;height:58px;flex-shrink:0;}
-header h1{font-size:16px;font-weight:600;line-height:1.2;}
+header h1{font-size:15.5px;font-weight:600;line-height:1.2;}
 header .sub{font-size:11px;opacity:.75;}
 .tabs{display:flex;gap:6px;margin-left:auto;}
 .tab{padding:8px 18px;border-radius:8px 8px 0 0;background:#2a4d73;color:#cfe0f2;cursor:pointer;font-size:13px;border:none;margin-top:14px;}
 .tab.active{background:#fff;color:var(--navy);font-weight:700;}
 .tab .badge{font-size:10px;background:var(--accent);color:#fff;border-radius:8px;padding:1px 7px;margin-left:6px;vertical-align:middle;}
-.tab.locked .badge{background:#888;}
+.tab .badge.g{background:var(--green);}
+#infoBtn{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.5);color:#fff;font-size:16px;font-weight:700;font-style:italic;font-family:Georgia,serif;cursor:pointer;flex-shrink:0;margin-left:10px;}
+#infoBtn:hover{background:var(--accent);border-color:var(--accent);}
 #main{display:flex;flex:1;min-height:0;}
-#sidebar{width:295px;background:#fff;border-right:1px solid #d7e2ee;overflow-y:auto;padding:12px;flex-shrink:0;}
+#sidebar{width:305px;background:#fff;border-right:1px solid #d7e2ee;overflow-y:auto;padding:12px;flex-shrink:0;}
 #map{flex:1;}
 .group{margin-bottom:14px;border:1px solid #e2eaf3;border-radius:8px;overflow:hidden;}
 .group h3{background:var(--light);padding:7px 10px;font-size:12.5px;color:var(--navy);}
@@ -29,19 +32,40 @@ header .sub{font-size:11px;opacity:.75;}
 .sw{width:14px;height:14px;border-radius:3px;display:inline-block;flex-shrink:0;border:1px solid rgba(0,0,0,.25);}
 .sw.pt{border-radius:50%;}
 #yearBox{padding:6px 10px 10px;}
-#yearBox select{width:100%;padding:6px;border:1px solid #c8d6e6;border-radius:6px;font-size:13px;}
-#yearBox .hint{font-size:11px;color:#789;margin-top:5px;}
+select{width:100%;padding:6px;border:1px solid #c8d6e6;border-radius:6px;font-size:13px;background:#fff;}
+.hint{font-size:11px;color:#789;margin-top:5px;}
 .note{font-size:11px;color:#68809a;background:var(--light);border-radius:8px;padding:9px 11px;line-height:1.55;}
 #loading{position:absolute;top:70px;right:14px;background:#fff;padding:6px 14px;border-radius:20px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:1000;display:none;}
 .leaflet-popup-content{font-size:12.5px;line-height:1.5;}
 .leaflet-popup-content b{color:var(--navy);}
-#phase2{display:none;flex:1;overflow-y:auto;background:var(--light);padding:34px;}
-.p2card{max-width:880px;margin:0 auto 18px;background:#fff;border-radius:12px;padding:22px 26px;box-shadow:0 1px 6px rgba(26,58,92,.08);}
-.p2card h2{color:var(--navy);font-size:17px;margin-bottom:8px;}
-.p2card p{font-size:13.5px;color:#3d5570;line-height:1.7;}
-.p2card .tag{display:inline-block;background:var(--light);color:var(--blue);font-size:11px;padding:2px 10px;border-radius:10px;margin:6px 6px 0 0;}
 footer{background:var(--navy);color:#9fb8d2;font-size:10.5px;padding:4px 16px;flex-shrink:0;}
-@media(max-width:700px){#sidebar{width:220px;}}
+/* Phase II panel */
+.p2step{margin-bottom:12px;border:1px solid #e2eaf3;border-radius:8px;padding:10px 12px;}
+.p2step h3{font-size:12.5px;color:var(--navy);margin-bottom:8px;}
+.p2step h3 .n{display:inline-flex;width:18px;height:18px;border-radius:50%;background:var(--blue);color:#fff;align-items:center;justify-content:center;font-size:11px;margin-right:6px;}
+.btn{width:100%;padding:9px;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;}
+.btn.pin{background:var(--light);color:var(--navy);border:1.5px dashed var(--blue);}
+.btn.pin.arm{background:#fff3cd;border-color:#e8a600;color:#7a5c00;}
+.btn.go{background:var(--accent);color:#fff;font-size:14px;padding:11px;}
+.btn.go:disabled{background:#c9d4e0;cursor:not-allowed;}
+.route-card{border:1.5px solid #e2eaf3;border-radius:9px;padding:9px 11px;margin-bottom:8px;cursor:pointer;font-size:12px;line-height:1.55;}
+.route-card:hover{border-color:var(--blue);}
+.route-card.best{border-color:var(--green);background:#f0fbf7;}
+.route-card.sel{border-color:var(--accent);box-shadow:0 0 0 2px rgba(232,96,76,.25);}
+.route-card .dst{font-weight:700;color:var(--navy);font-size:12.5px;}
+.route-card .meta{color:#5a7591;}
+.veh{display:inline-block;background:var(--light);border-radius:10px;padding:1px 8px;font-size:11px;margin:3px 3px 0 0;color:#2c4a68;}
+.veh.warn{background:#fdecea;color:#b03a2e;}
+.gmap{display:inline-block;margin-top:5px;font-size:11.5px;color:var(--blue);text-decoration:none;font-weight:600;}
+.tagbest{background:var(--green);color:#fff;font-size:10px;border-radius:8px;padding:1px 7px;margin-left:5px;}
+.tagflood{background:#e8604c;color:#fff;font-size:10px;border-radius:8px;padding:1px 7px;margin-left:5px;}
+#status2{font-size:11.5px;color:#68809a;margin-top:6px;line-height:1.5;}
+/* modal */
+#infoModal{display:none;position:fixed;inset:0;background:rgba(10,25,45,.8);z-index:3000;}
+#infoModal.open{display:block;}
+#infoModal iframe{position:absolute;inset:4% 5%;width:90%;height:92%;border:none;border-radius:12px;background:#0f2438;}
+#infoModal .close{position:absolute;top:calc(4% + 10px);right:calc(5% + 10px);width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:17px;cursor:pointer;z-index:3001;}
+@media(max-width:700px){#sidebar{width:235px;}}
 </style>
 </head>
 <body>
@@ -51,62 +75,66 @@ footer{background:var(--navy);color:#9fb8d2;font-size:10.5px;padding:4px 16px;fl
     <div class="sub">Decision Support System for Village Health Volunteers in Flood Emergencies, Pathum Thani</div>
   </div>
   <div class="tabs">
-    <button class="tab active" id="tab1" onclick="showPhase(1)">Phase I (Big Data) <span class="badge">ปัจจุบัน</span></button>
-    <button class="tab locked" id="tab2" onclick="showPhase(2)">Phase II (Analyse Data) <span class="badge">ต่อไป</span></button>
+    <button class="tab" id="tab1" onclick="showPhase(1)">Phase I (Big Data)</button>
+    <button class="tab active" id="tab2" onclick="showPhase(2)">Phase II (Analyse Data) <span class="badge g">ใหม่</span></button>
   </div>
+  <button id="infoBtn" title="ข้อมูลโครงการ (Presentation)" onclick="document.getElementById('infoModal').classList.add('open')">i</button>
 </header>
 <div id="main">
   <div id="sidebar">
-    <div class="group">
-      <h3>ขอบเขตการปกครอง</h3>
-      <div class="items" id="gAdmin"></div>
-    </div>
-    <div class="group">
-      <h3>สถานพยาบาลและสถานี</h3>
-      <div class="items" id="gPoint"></div>
-    </div>
-    <div class="group">
-      <h3>ข้อมูลกายภาพ</h3>
-      <div class="items" id="gPhys"></div>
-    </div>
-    <div class="group">
-      <h3>พื้นที่น้ำท่วมในอดีต (GISTDA)</h3>
-      <div class="items" id="gFlood"></div>
-      <div id="yearBox">
-        <select id="yearSel"></select>
-        <div class="hint">เลือกปีเพื่อแสดงขอบเขตน้ำท่วม (clip เฉพาะเขต จ.ปทุมธานี)</div>
+    <!-- Phase I panel -->
+    <div id="panel1" style="display:none">
+      <div class="group"><h3>ขอบเขตการปกครอง</h3><div class="items" id="gAdmin"></div></div>
+      <div class="group"><h3>สถานพยาบาลและสถานี</h3><div class="items" id="gPoint"></div></div>
+      <div class="group"><h3>ข้อมูลกายภาพ</h3><div class="items" id="gPhys"></div></div>
+      <div class="group"><h3>พื้นที่น้ำท่วมในอดีต (GISTDA)</h3>
+        <div class="items" id="gFlood"></div>
+        <div id="yearBox"><select id="yearSel"></select>
+          <div class="hint">เลือกปีเพื่อแสดงขอบเขตน้ำท่วม (clip เฉพาะเขต จ.ปทุมธานี)</div></div>
       </div>
+      <div class="note">ข้อมูลทุกชั้นถูก clip ให้เหลือเฉพาะพื้นที่จังหวัดปทุมธานี • Phase I: รวบรวมข้อมูล GIS พื้นฐาน</div>
     </div>
-    <div class="note">
-      ข้อมูลทุกชั้นถูก clip ให้เหลือเฉพาะพื้นที่จังหวัดปทุมธานี •
-      Phase I: รวบรวมข้อมูล GIS พื้นฐาน •
-      Phase II: วิเคราะห์เส้นทางช่วยเหลือผู้ป่วย + แบบจำลองการไหลของน้ำ
+    <!-- Phase II panel -->
+    <div id="panel2">
+      <div class="p2step">
+        <h3><span class="n">1</span>กำหนดตำแหน่งผู้ป่วย</h3>
+        <button class="btn pin" id="pinBtn" onclick="armPin()">📍 คลิกปุ่มนี้ แล้วคลิกบนแผนที่</button>
+        <div class="hint" id="pinHint">ยังไม่ได้ปักหมุด — ลากหมุดปรับตำแหน่งได้หลังปัก</div>
+        <div style="margin-top:8px">
+          <select id="sevSel">
+            <option value="red">🔴 ผู้ป่วยวิกฤต (ติดเตียง/ใช้เครื่องมือแพทย์)</option>
+            <option value="yellow" selected>🟡 ผู้ป่วยปานกลาง (โรคเรื้อรัง/สูงอายุ)</option>
+            <option value="green">🟢 ผู้ป่วยทั่วไป</option>
+          </select>
+        </div>
+      </div>
+      <div class="p2step">
+        <h3><span class="n">2</span>สถานการณ์น้ำท่วมที่ใช้ประเมิน</h3>
+        <select id="hazSel"></select>
+        <div class="hint">ปัจจุบันใช้แผนที่น้ำท่วมในอดีต — อนาคตจะใช้ risk map จากภัย × ความเปราะบาง (Tr2–Tr100)</div>
+      </div>
+      <div class="p2step">
+        <h3><span class="n">3</span>ค้นหาเส้นทาง</h3>
+        <button class="btn go" id="goBtn" onclick="findRoutes()" disabled>🚨 หาเส้นทางหนีภัยที่เหมาะสมที่สุด</button>
+        <div id="status2"></div>
+      </div>
+      <div id="results"></div>
+      <div class="note">เส้นทางคำนวณด้วย OSRM (โครงข่ายถนน OpenStreetMap) และตรวจสอบการตัดผ่านพื้นที่น้ำท่วมเพื่อแนะนำยานพาหนะ • ปุ่ม "นำทาง Google Maps" เปิดการนำทางจริงบนมือถือได้ทันที</div>
     </div>
   </div>
   <div id="map"></div>
-  <div id="phase2">
-    <div class="p2card"><h2>Phase II — Analyse Data (อยู่ระหว่างพัฒนา)</h2>
-      <p>เฟสถัดไปจะนำข้อมูล Big Data จาก Phase I มาวิเคราะห์เพื่อสนับสนุนการตัดสินใจของ อสม. ในภาวะน้ำท่วม ประกอบด้วย:</p>
-      <span class="tag">แบบจำลองการไหลของน้ำ (Hydrodynamic Model)</span>
-      <span class="tag">Scenario รอบปีการเกิดซ้ำ Tr2–Tr100</span>
-      <span class="tag">ความลึกและความเร็วการไหลของน้ำ</span>
-      <span class="tag">การหาเส้นทางเข้าช่วยเหลือผู้ป่วย (Routing)</span>
-      <span class="tag">พื้นที่เสี่ยงภัยจากความเปราะบาง</span>
-      <span class="tag">ความรุนแรงอาการผู้ป่วย</span>
-    </div>
-    <div class="p2card"><h2>ผลลัพธ์ที่คาดหวัง</h2>
-      <p>แผนที่เส้นทางอพยพและส่งต่อผู้ป่วยไปยังโรงพยาบาลที่ไม่ถูกน้ำท่วมหรือศูนย์อพยพ โดยพิจารณาความลึกน้ำบนถนน (เกณฑ์ขาดรถ/ต้องใช้เรือ) ร่วมกับข้อมูลผู้ป่วย (โรคประจำตัว ยา เครื่องมือแพทย์ที่จำเป็น ผู้ดูแล) เพื่อจัดลำดับความสำคัญการช่วยเหลือ</p>
-      <p style="margin-top:8px">ดูรายละเอียดแผนงานทั้งหมดได้ที่ <a href="presentation.html">HTML Presentation ของโครงการ</a></p>
-    </div>
-  </div>
 </div>
 <div id="loading">⏳ กำลังโหลดข้อมูล…</div>
-<footer>Phase I — Big Data Collection | ข้อมูล: GISTDA flood archive, กระทรวงสาธารณสุข, กรมพัฒนาที่ดิน, สทนช. | จัดทำเพื่อสนับสนุน อสม. จ.ปทุมธานี</footer>
+<div id="infoModal">
+  <iframe src="presentation.html" loading="lazy"></iframe>
+  <button class="close" onclick="document.getElementById('infoModal').classList.remove('open')">✕</button>
+</div>
+<footer>Phase I: Big Data | Phase II: Analyse Data — Routing & Vehicle Advisory | ข้อมูล: GISTDA, สธ., พด., สทนช. | จัดทำเพื่อสนับสนุน อสม. จ.ปทุมธานี</footer>
 <script>
 const map = L.map('map').setView([14.05, 100.65], 11);
-const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '© OpenStreetMap'}).addTo(map);
-const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom: 19, attribution: '© Esri World Imagery'});
-L.control.layers({'แผนที่ถนน (OSM)': osm, 'ภาพถ่ายดาวเทียม (Esri)': sat}, null, {position: 'topright'}).addTo(map);
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'© OpenStreetMap'}).addTo(map);
+const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'© Esri World Imagery'});
+L.control.layers({'แผนที่ถนน (OSM)': osm, 'ภาพถ่ายดาวเทียม (Esri)': sat}, null, {position:'topright'}).addTo(map);
 L.control.scale({imperial:false}).addTo(map);
 
 const FLOOD_YEARS = [2005,2006,2007,2008,2009,2010,2011,2013,2014,2015,2016,2017,2018,2019,2020,2021];
@@ -114,47 +142,28 @@ const cache = {}, active = {};
 const loading = document.getElementById('loading');
 let pending = 0;
 function busy(on){ pending += on?1:-1; loading.style.display = pending>0?'block':'none'; }
-
 async function getData(file){
   if(cache[file]) return cache[file];
   busy(true);
-  try{
-    const r = await fetch('data/'+file);
-    if(!r.ok) throw new Error(file);
-    cache[file] = await r.json();
-    return cache[file];
+  try{ const r = await fetch('data/'+file); if(!r.ok) throw new Error(file);
+    cache[file] = await r.json(); return cache[file];
   } finally { busy(false); }
 }
 
 const hospIcon = L.divIcon({html:'<div style="background:#d63031;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)">H</div>',className:'',iconSize:[20,20],iconAnchor:[10,10]});
 const staIcon  = L.divIcon({html:'<div style="background:#0984e3;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)">S</div>',className:'',iconSize:[18,18],iconAnchor:[9,9]});
-
-function popupOf(p, fields){
-  return fields.filter(f=>p[f.k]!=null && p[f.k]!=='').map(f=>`<b>${f.t}:</b> ${p[f.k]}`).join('<br>');
-}
+function popupOf(p, fields){ return fields.filter(f=>p[f.k]!=null && p[f.k]!=='').map(f=>`<b>${f.t}:</b> ${p[f.k]}`).join('<br>'); }
 
 const LAYERS = {
-  province:{file:'province.geojson', group:'gAdmin', label:'ขอบเขตจังหวัด', color:'#1a3a5c', on:true,
-    style:{color:'#1a3a5c',weight:2.5,fill:false,dashArray:null}},
-  amphoe:{file:'amphoe.geojson', group:'gAdmin', label:'ขอบเขตอำเภอ', color:'#6c5ce7', on:true,
-    style:{color:'#6c5ce7',weight:1.5,fill:false,dashArray:'5 4'},
-    pop:p=>popupOf(p,[{k:'AMPHOE_T',t:'อำเภอ'},{k:'AMPHOE_E',t:'Amphoe'}])},
-  tambon:{file:'tambon.geojson', group:'gAdmin', label:'ขอบเขตตำบล', color:'#b2bec3', on:false,
-    style:{color:'#8395a7',weight:.8,fill:false,dashArray:'2 3'},
-    pop:p=>popupOf(p,[{k:'TAM_NAM_T',t:'ตำบล'},{k:'AMPHOE_T',t:'อำเภอ'}])},
-  hospital:{file:'hospital.geojson', group:'gPoint', label:'โรงพยาบาล / สถานพยาบาล', color:'#d63031', on:true, pt:true, icon:hospIcon,
-    pop:p=>popupOf(p,[{k:'Agency',t:'ชื่อ'},{k:'Department',t:'สังกัด'},{k:'Ministry',t:'กระทรวง'},{k:'Address',t:'ที่อยู่'}])},
-  station:{file:'station.geojson', group:'gPoint', label:'สถานีวัดน้ำ', color:'#0984e3', on:true, pt:true, icon:staIcon,
-    pop:p=>popupOf(p,[{k:'Code',t:'รหัสสถานี'},{k:'River',t:'แม่น้ำ'},{k:'Detail',t:'รายละเอียด'},{k:'Amphoe',t:'อำเภอ'},{k:'Remark',t:'ประเภท'}])},
-  river:{file:'river.geojson', group:'gPhys', label:'แม่น้ำ (polygon)', color:'#74b9ff', on:true,
-    style:{color:'#0a6ebd',weight:1,fillColor:'#74b9ff',fillOpacity:.75},
-    pop:p=>popupOf(p,[{k:'NAMT',t:'ชื่อ'},{k:'NAME',t:'Name'}])},
-  basin:{file:'basin.geojson', group:'gPhys', label:'ลุ่มน้ำหลัก (สทนช.)', color:'#00b894', on:false,
-    style:{color:'#00b894',weight:2,fill:false,dashArray:'8 5'},
-    pop:p=>popupOf(p,[{k:'MBASIN_T',t:'ลุ่มน้ำ'},{k:'MBASIN_E',t:'Basin'}])},
+  province:{file:'province.geojson', group:'gAdmin', label:'ขอบเขตจังหวัด', color:'#1a3a5c', on:true, style:{color:'#1a3a5c',weight:2.5,fill:false}},
+  amphoe:{file:'amphoe.geojson', group:'gAdmin', label:'ขอบเขตอำเภอ', color:'#6c5ce7', on:true, style:{color:'#6c5ce7',weight:1.5,fill:false,dashArray:'5 4'}, pop:p=>popupOf(p,[{k:'AMPHOE_T',t:'อำเภอ'},{k:'AMPHOE_E',t:'Amphoe'}])},
+  tambon:{file:'tambon.geojson', group:'gAdmin', label:'ขอบเขตตำบล', color:'#b2bec3', on:false, style:{color:'#8395a7',weight:.8,fill:false,dashArray:'2 3'}, pop:p=>popupOf(p,[{k:'TAM_NAM_T',t:'ตำบล'},{k:'AMPHOE_T',t:'อำเภอ'}])},
+  hospital:{file:'hospital.geojson', group:'gPoint', label:'โรงพยาบาล / สถานพยาบาล', color:'#d63031', on:true, pt:true, icon:hospIcon, pop:p=>popupOf(p,[{k:'Agency',t:'ชื่อ'},{k:'Department',t:'สังกัด'},{k:'Ministry',t:'กระทรวง'},{k:'Address',t:'ที่อยู่'}])},
+  station:{file:'station.geojson', group:'gPoint', label:'สถานีวัดน้ำ', color:'#0984e3', on:true, pt:true, icon:staIcon, pop:p=>popupOf(p,[{k:'Code',t:'รหัสสถานี'},{k:'River',t:'แม่น้ำ'},{k:'Detail',t:'รายละเอียด'},{k:'Amphoe',t:'อำเภอ'},{k:'Remark',t:'ประเภท'}])},
+  river:{file:'river.geojson', group:'gPhys', label:'แม่น้ำ (polygon)', color:'#74b9ff', on:true, style:{color:'#0a6ebd',weight:1,fillColor:'#74b9ff',fillOpacity:.75}, pop:p=>popupOf(p,[{k:'NAMT',t:'ชื่อ'},{k:'NAME',t:'Name'}])},
+  basin:{file:'basin.geojson', group:'gPhys', label:'ลุ่มน้ำหลัก (สทนช.)', color:'#00b894', on:false, style:{color:'#00b894',weight:2,fill:false,dashArray:'8 5'}, pop:p=>popupOf(p,[{k:'MBASIN_T',t:'ลุ่มน้ำ'},{k:'MBASIN_E',t:'Basin'}])},
   landuse:{file:'landuse.geojson', group:'gPhys', label:'การใช้ที่ดิน 2568 (L1)', color:'#fdcb6e', on:false,
-    style:f=>({U:{fillColor:'#e17055',color:'#c44'},A:{fillColor:'#a3d977',color:'#7a5'},W:{fillColor:'#74b9ff',color:'#48a'},M:{fillColor:'#dfe6e9',color:'#aab'},F:{fillColor:'#00b894',color:'#087'}}[f.properties.L1]
-      ? Object.assign({weight:.5,fillOpacity:.45},{U:{fillColor:'#e17055',color:'#c44'},A:{fillColor:'#a3d977',color:'#7a5'},W:{fillColor:'#74b9ff',color:'#48a'},M:{fillColor:'#dfe6e9',color:'#aab'},F:{fillColor:'#00b894',color:'#087'}}[f.properties.L1]) : {fillColor:'#ccc',weight:.5,fillOpacity:.4}),
+    style:f=>{const m={U:{fillColor:'#e17055',color:'#c44'},A:{fillColor:'#a3d977',color:'#7a5'},W:{fillColor:'#74b9ff',color:'#48a'},M:{fillColor:'#dfe6e9',color:'#aab'},F:{fillColor:'#00b894',color:'#087'}};return Object.assign({weight:.5,fillOpacity:.45},m[f.properties.L1]||{fillColor:'#ccc'});},
     pop:p=>popupOf(p,[{k:'LU_NAME',t:'ประเภท'},{k:'Area_Rai',t:'พื้นที่ (ไร่)'}])},
 };
 
@@ -170,9 +179,8 @@ async function toggleLayer(key, on){
     });
     active[key] = lyr; lyr.addTo(map);
     if(key==='province') map.fitBounds(lyr.getBounds(), {padding:[15,15]});
-  }catch(e){ alert('โหลดข้อมูล '+cfg.file+' ไม่สำเร็จ'); document.getElementById('cb_'+key).checked=false; }
+  }catch(e){ const cb=document.getElementById('cb_'+key); if(cb) cb.checked=false; }
 }
-
 for(const [key,cfg] of Object.entries(LAYERS)){
   const row = document.createElement('label'); row.className='layer-row';
   row.innerHTML = `<input type="checkbox" id="cb_${key}" ${cfg.on?'checked':''}> <span class="sw ${cfg.pt?'pt':''}" style="background:${cfg.color}"></span> ${cfg.label}`;
@@ -181,41 +189,7 @@ for(const [key,cfg] of Object.entries(LAYERS)){
   if(cfg.on) toggleLayer(key, true);
 }
 
-// flood year layer
+// ---- Phase I flood year layer ----
 let floodLayer = null;
 const floodRow = document.createElement('label'); floodRow.className='layer-row';
-floodRow.innerHTML = `<input type="checkbox" id="cb_flood" checked> <span class="sw" style="background:#3b7dd8"></span> ขอบเขตน้ำท่วม (รายปี)`;
-document.getElementById('gFlood').appendChild(floodRow);
-const sel = document.getElementById('yearSel');
-FLOOD_YEARS.forEach(y=>{ const o=document.createElement('option'); o.value=y; o.textContent='พ.ศ. '+(y+543)+' (ค.ศ. '+y+')'; sel.appendChild(o); });
-sel.value = 2011;
-async function loadFlood(){
-  if(floodLayer){ map.removeLayer(floodLayer); floodLayer=null; }
-  if(!document.getElementById('cb_flood').checked) return;
-  try{
-    const gj = await getData('flood_'+sel.value+'.geojson');
-    const hint = document.querySelector('#yearBox .hint');
-    if(!gj.features || gj.features.length===0){
-      hint.innerHTML = '<span style="color:#c0392b">ปี พ.ศ. '+(+sel.value+543)+' ไม่พบพื้นที่น้ำท่วมในเขต จ.ปทุมธานี</span>';
-      return;
-    }
-    hint.textContent = 'แสดงขอบเขตน้ำท่วมปี พ.ศ. '+(+sel.value+543)+' (clip เฉพาะเขต จ.ปทุมธานี)';
-    floodLayer = L.geoJSON(gj, {style:{color:'#1e5ba8',weight:.6,fillColor:'#3b7dd8',fillOpacity:.5}}).addTo(map);
-    floodLayer.bindPopup('พื้นที่น้ำท่วม ปี ค.ศ. '+sel.value+' (พ.ศ. '+(+sel.value+543)+')');
-  }catch(e){ alert('ยังไม่มีข้อมูลน้ำท่วมปี '+sel.value); }
-}
-sel.addEventListener('change', loadFlood);
-document.getElementById('cb_flood').addEventListener('change', loadFlood);
-loadFlood();
-
-function showPhase(n){
-  document.getElementById('tab1').classList.toggle('active', n===1);
-  document.getElementById('tab2').classList.toggle('active', n===2);
-  document.getElementById('sidebar').style.display = n===1?'block':'none';
-  document.getElementById('map').style.display = n===1?'block':'none';
-  document.getElementById('phase2').style.display = n===2?'block':'none';
-  if(n===1) setTimeout(()=>map.invalidateSize(), 60);
-}
-</script>
-</body>
-</html>
+floodRow.innerHTML = `<input type="checkbox" id="
