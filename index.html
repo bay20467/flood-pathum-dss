@@ -322,19 +322,8 @@ async function showHazard(){
 hazSel.addEventListener('change', ()=>{ if(document.getElementById('panel2').style.display!=='none') showHazard(); });
 
 // ---------- planning ----------
-function assessFlood(routeCoords, floodFeats){
-  const line = turf.lineString(routeCoords);
-  const lenKm = turf.length(line);
-  const step = Math.max(0.1, lenKm/120);
-  let hit=0, total=0;
-  for(let d=0; d<=lenKm; d+=step){
-    const pt = turf.along(line, d); total++;
-    for(const f of floodFeats){ if(turf.booleanPointInPolygon(pt, f)){ hit++; break; } }
-  }
-  return {floodKm: lenKm*hit/Math.max(total,1), lenKm};
-}
 function clsNeeded(fKm){ return fKm===0?0 : fKm<0.5?1 : fKm<2?2 : 3; }
-function clsLabel(fKm){ return fKm===0?'ถนนแห้งตลอด' : 'ผ่านน้ำท่วม ~'+(fKm<1?(fKm*1000).toFixed(0)+' ม.':fKm.toFixed(1)+' กม.'); }
+function clsLabel(fKm){ return fKm<0.05?'ถนนแห้งตลอด' : 'ผ่านน้ำท่วม ~'+(fKm<1?(fKm*1000).toFixed(0)+' ม.':fKm.toFixed(1)+' กม.'); }
 function dist2(a,b){ return (a.lat-b.lat)*(a.lat-b.lat)+(a.lng-b.lng)*(a.lng-b.lng); }
 function nnOrder(from, pts){
   const rest=[...pts], out=[]; let cur=from;
@@ -348,89 +337,156 @@ async function osrmRoute(points){
   }
   return null;
 }
+// แบ่งเส้นทางเป็นช่วงแห้ง (รถ) / ช่วงน้ำท่วม (เรือ) พร้อมจุดเปลี่ยนถ่ายแรก
+function segmentRoute(coords, feats){
+  const line=turf.lineString(coords); const lenKm=turf.length(line);
+  const step=Math.max(0.05, lenKm/300);
+  const samples=[];
+  for(let d=0; d<=lenKm; d+=step){
+    const pt=turf.along(line,d);
+    samples.push({d, wet: feats.some(f=>turf.booleanPointInPolygon(pt,f))});
+  }
+  const groups=[]; let cur=null;
+  samples.forEach(s=>{ if(!cur||cur.wet!==s.wet){ cur={wet:s.wet,d0:s.d,d1:s.d}; groups.push(cur); } else cur.d1=s.d; });
+  const dry=[], wet=[]; let dryKm=0, wetKm=0, transfer=null;
+  groups.forEach((g,i)=>{
+    const d1=Math.min(g.d1+step, lenKm);
+    if(d1-g.d0<0.02) return;
+    try{
+      const sl=turf.lineSliceAlong(line, g.d0, d1);
+      if(g.wet){ wet.push(sl); wetKm+=d1-g.d0; if(transfer===null&&i>0){ const c=turf.along(line,g.d0).geometry.coordinates; transfer=[c[1],c[0]]; } }
+      else { dry.push(sl); dryKm+=d1-g.d0; }
+    }catch(e){}
+  });
+  return {dry, wet, dryKm, wetKm, lenKm, transfer};
+}
+const BOAT_KMH=8;
+function tripTime(rt, seg, mode){
+  const lenKm=Math.max(rt.distance/1000, 0.001);
+  if(mode==='boat') return {dryMin:0, wetMin:lenKm/BOAT_KMH*60, totMin:lenKm/BOAT_KMH*60};
+  const dryMin=(rt.duration/60)*(seg.dryKm/lenKm);
+  const wetMin= mode==='mixed' ? seg.wetKm/BOAT_KMH*60 : (rt.duration/60)*(seg.wetKm/lenKm)*2;
+  return {dryMin, wetMin, totMin:dryMin+wetMin};
+}
 const TRIP_COLORS=['#00b894','#e17055','#6c5ce7','#e84393','#f39c12','#00cec9','#d63031','#2f6db3'];
 function clearTrips(){ tripLayers.forEach(l=>map.removeLayer(l)); tripLayers=[]; document.getElementById('results').innerHTML=''; }
 
 async function planMission(){
   const status=document.getElementById('status2'); const goBtn=document.getElementById('goBtn');
-  if(fleetCap()===0){ status.innerHTML='\u274c \u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e22\u0e32\u0e19\u0e1e\u0e32\u0e2b\u0e19\u0e30 \u2014 \u0e01\u0e14 + \u0e43\u0e19\u0e41\u0e16\u0e1a\u0e02\u0e27\u0e32 \u0e41\u0e25\u0e49\u0e27\u0e01\u0e14 Save'; return; }
+  if(fleetCap()===0){ status.innerHTML='❌ ยังไม่ได้กำหนดยานพาหนะ — กด + ในแถบขวา แล้วกด Save'; return; }
   goBtn.disabled=true; clearTrips();
   try{
-    status.textContent='\u23f3 \u0e42\u0e2b\u0e25\u0e14\u0e2a\u0e16\u0e32\u0e19\u0e01\u0e32\u0e23\u0e13\u0e4c\u0e19\u0e49\u0e33\u0e17\u0e48\u0e27\u0e21\u2026';
+    status.textContent='⏳ โหลดสถานการณ์น้ำท่วม…';
     const haz=await showHazard(); const feats=haz.features||[];
     const ordered=[...patients].sort((a,b)=>(sevMeta[a.sev].rank-sevMeta[b.sev].rank)||(dist2(base,a)-dist2(base,b)));
     let remaining=[...ordered];
     const units=[];
     VEHICLES.forEach(v=>{ for(let k=1;k<=(fleet[v.id]||0);k++) units.push({v, name:v.name+' #'+k}); });
-    const trips=[]; let round=1, guard=0;
+    const trips=[]; let round=1, guard=0, failed=false;
     while(remaining.length && guard++<15){
       const free=[...units].sort((a,b)=>b.v.cap-a.v.cap);
       let used=false;
       while(free.length && remaining.length){
-        status.textContent='\u23f3 \u0e23\u0e2d\u0e1a\u0e17\u0e35\u0e48 '+round+' \u2014 \u0e27\u0e32\u0e07\u0e41\u0e1c\u0e19\u0e40\u0e17\u0e35\u0e48\u0e22\u0e27\u0e17\u0e35\u0e48 '+(trips.length+1)+'\u2026 (\u0e40\u0e2b\u0e25\u0e37\u0e2d\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22 '+remaining.length+' \u0e04\u0e19)';
-        let u=free[0];
-        let batch=nnOrder(base, remaining.slice(0, Math.min(u.v.cap, remaining.length)));
+        status.textContent='⏳ รอบที่ '+round+' — วางแผนเที่ยวที่ '+(trips.length+1)+'… (เหลือผู้ป่วย '+remaining.length+' คน)';
+        let batch=nnOrder(base, remaining.slice(0, Math.min(free[0].v.cap, remaining.length)));
         let rt=await osrmRoute([base,...batch,base]);
-        if(!rt){ status.innerHTML='\u274c \u0e04\u0e33\u0e19\u0e27\u0e13\u0e40\u0e2a\u0e49\u0e19\u0e17\u0e32\u0e07\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 (OSRM \u0e44\u0e21\u0e48\u0e15\u0e2d\u0e1a\u0e2a\u0e19\u0e2d\u0e07) \u2014 \u0e25\u0e2d\u0e07\u0e43\u0e2b\u0e21\u0e48\u0e2d\u0e35\u0e01\u0e04\u0e23\u0e31\u0e49\u0e07'; return; }
-        let fa=assessFlood(rt.geometry.coordinates, feats); let need=clsNeeded(fa.floodKm); let warn=false;
-        if(u.v.cls<need){
-          const alt=free.filter(x=>x.v.cls>=need).sort((a,b)=>b.v.cap-a.v.cap)[0];
-          if(alt){
-            u=alt;
-            if(batch.length>u.v.cap){
-              batch=nnOrder(base, remaining.slice(0, u.v.cap));
-              rt=await osrmRoute([base,...batch,base]);
-              if(!rt){ status.innerHTML='\u274c OSRM \u0e44\u0e21\u0e48\u0e15\u0e2d\u0e1a\u0e2a\u0e19\u0e2d\u0e07 \u2014 \u0e25\u0e2d\u0e07\u0e43\u0e2b\u0e21\u0e48'; return; }
-              fa=assessFlood(rt.geometry.coordinates, feats); need=clsNeeded(fa.floodKm);
-              warn=u.v.cls<need;
-            }
-          } else {
-            free.sort((a,b)=>(b.v.cls-a.v.cls)||(b.v.cap-a.v.cap)); u=free[0]; warn=true;
-            if(batch.length>u.v.cap){
-              batch=nnOrder(base, remaining.slice(0, u.v.cap));
-              rt=await osrmRoute([base,...batch,base]);
-              if(!rt){ status.innerHTML='\u274c OSRM \u0e44\u0e21\u0e48\u0e15\u0e2d\u0e1a\u0e2a\u0e19\u0e2d\u0e07 \u2014 \u0e25\u0e2d\u0e07\u0e43\u0e2b\u0e21\u0e48'; return; }
-              fa=assessFlood(rt.geometry.coordinates, feats); need=clsNeeded(fa.floodKm); warn=u.v.cls<need;
-            }
+        if(!rt){ failed=true; break; }
+        let seg=segmentRoute(rt.geometry.coordinates, feats);
+        const shrink=async cap=>{
+          if(batch.length<=cap) return true;
+          batch=nnOrder(base, remaining.slice(0, cap));
+          rt=await osrmRoute([base,...batch,base]); if(!rt) return false;
+          seg=segmentRoute(rt.geometry.coordinates, feats); return true;
+        };
+        let assigned=null;
+        if(seg.wetKm<0.05){
+          // เส้นทางแห้ง: ใช้รถ (ไม่ใช้เรือถ้ามีรถว่าง)
+          const cand=free.filter(x=>x.v.id!=='bot').sort((a,b)=>b.v.cap-a.v.cap)[0]||free[0];
+          if(!await shrink(cand.v.cap)){ failed=true; break; }
+          assigned={us:[cand], mode:cand.v.id==='bot'?'boat':'road', warn:false, cap:cand.v.cap};
+        } else {
+          const need=clsNeeded(seg.wetKm);
+          const boats=free.filter(x=>x.v.id==='bot');
+          const roadAny=free.filter(x=>x.v.id!=='bot');
+          const roadCapable=roadAny.filter(x=>x.v.cls>=need);
+          if(seg.dryKm<0.5){
+            // แทบไม่มีช่วงถนนแห้ง → เรือล้วน (หรือรถลุยน้ำ)
+            const cand=boats[0]||roadCapable[0];
+            if(cand){ if(!await shrink(cand.v.cap)){ failed=true; break; }
+              assigned={us:[cand], mode:cand.v.id==='bot'?'boat':'truck', warn:false, cap:cand.v.cap}; }
+          } else if(boats.length && roadAny.length){
+            // ผสม: รถวิ่งช่วงแห้ง → จุดเปลี่ยนถ่าย → เรือเข้าเขตน้ำท่วม
+            const boat=boats[0], car=roadAny[0];
+            const cap=Math.min(boat.v.cap, car.v.cap);
+            if(!await shrink(cap)){ failed=true; break; }
+            assigned={us:[car,boat], mode:'mixed', warn:false, cap};
+          } else if(roadCapable.length){
+            const cand=roadCapable[0];
+            if(!await shrink(cand.v.cap)){ failed=true; break; }
+            assigned={us:[cand], mode:'truck', warn:false, cap:cand.v.cap};
+          } else if(boats.length){
+            const cand=boats[0];
+            if(!await shrink(cand.v.cap)){ failed=true; break; }
+            assigned={us:[cand], mode:'boat', warn:false, cap:cand.v.cap};
+          }
+          if(!assigned){
+            const cand=[...free].sort((a,b)=>(b.v.cls-a.v.cls)||(b.v.cap-a.v.cap))[0];
+            if(!await shrink(cand.v.cap)){ failed=true; break; }
+            assigned={us:[cand], mode:cand.v.id==='bot'?'boat':'road', warn:true, cap:cand.v.cap};
           }
         }
-        free.splice(free.indexOf(u),1);
-        trips.push({v:u.v, unit:u.name, round, pts:batch, rt, floodKm:fa.floodKm, warn});
+        assigned.us.forEach(x=>free.splice(free.indexOf(x),1));
+        trips.push({us:assigned.us, mode:assigned.mode, warn:assigned.warn, cap:assigned.cap, round, pts:batch, rt, seg});
         const ids=new Set(batch.map(p=>p.id));
         remaining=remaining.filter(p=>!ids.has(p.id));
         used=true;
       }
-      if(!used) break;
+      if(failed || !used) break;
       round++;
     }
-    renderTrips(trips, round-1);
+    if(failed && !trips.length){ status.innerHTML='❌ คำนวณเส้นทางไม่สำเร็จ (OSRM ไม่ตอบสนอง) — ลองใหม่อีกครั้ง'; return; }
+    renderTrips(trips, round-(remaining.length?0:1));
   } finally { goBtn.disabled=false; updateGo(); }
 }
+const MODE_TXT={road:'รถล้วน (ถนนแห้ง)', truck:'รถลุยน้ำตลอดเส้นทาง', boat:'เรือล้วน (พื้นที่น้ำท่วม)', mixed:'รถ + เรือ (เปลี่ยนถ่ายที่จุด ⚓)'};
 function renderTrips(trips, rounds){
   const box=document.getElementById('results');
-  const nR = rounds || Math.max(...trips.map(t=>t.round));
-  let html='<div class="note" style="margin-bottom:8px">\ud83d\udccb \u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22 '+patients.length+' \u0e04\u0e19 \u00b7 \u0e04\u0e27\u0e32\u0e21\u0e08\u0e38\u0e23\u0e27\u0e21 '+fleetCap()+' \u0e04\u0e19/\u0e23\u0e2d\u0e1a \u2192 <b>'+trips.length+'</b> \u0e40\u0e17\u0e35\u0e48\u0e22\u0e27 \u0e43\u0e19 <b>'+nR+'</b> \u0e23\u0e2d\u0e1a'
-    +(nR>1?' \u00b7 <b style="color:#b03a2e">\u0e04\u0e27\u0e32\u0e21\u0e08\u0e38\u0e44\u0e21\u0e48\u0e1e\u0e2d\u0e43\u0e19\u0e23\u0e2d\u0e1a\u0e40\u0e14\u0e35\u0e22\u0e27 \u2014 \u0e15\u0e49\u0e2d\u0e07\u0e2a\u0e48\u0e07\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22\u0e17\u0e35\u0e48\u0e10\u0e32\u0e19\u0e41\u0e25\u0e49\u0e27\u0e27\u0e19\u0e01\u0e25\u0e31\u0e1a\u0e44\u0e1b\u0e23\u0e31\u0e1a</b>':' \u00b7 \u0e17\u0e38\u0e01\u0e04\u0e31\u0e19\u0e2d\u0e2d\u0e01\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e01\u0e31\u0e19\u0e44\u0e14\u0e49')+'</div>';
+  const nR=Math.max(1, ...trips.map(t=>t.round));
+  let html='<div class="note" style="margin-bottom:8px">📋 ผู้ป่วย '+patients.length+' คน · ความจุรวม '+fleetCap()+' คน/รอบ → <b>'+trips.length+'</b> ภารกิจ ใน <b>'+nR+'</b> รอบ'
+    +(nR>1?' · <b style="color:#b03a2e">ความจุไม่พอในรอบเดียว — ส่งผู้ป่วยที่ฐานแล้ววนกลับไปรับ</b>':' · ทุกคันออกพร้อมกันได้')+'</div>';
   let lastRound=0;
   trips.forEach((t,i)=>{
     if(t.round!==lastRound){
       lastRound=t.round;
-      html+='<div style="font-size:11.5px;font-weight:700;color:var(--navy);margin:10px 0 5px">\ud83d\udd01 \u0e23\u0e2d\u0e1a\u0e17\u0e35\u0e48 '+t.round+(t.round>1?' (\u0e2b\u0e25\u0e31\u0e07\u0e2a\u0e48\u0e07\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22\u0e23\u0e2d\u0e1a\u0e01\u0e48\u0e2d\u0e19\u0e17\u0e35\u0e48\u0e10\u0e32\u0e19)':' (\u0e2d\u0e2d\u0e01\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e01\u0e31\u0e19)')+'</div>';
+      html+='<div style="font-size:11.5px;font-weight:700;color:var(--navy);margin:10px 0 5px">🔁 รอบที่ '+t.round+(t.round>1?' (หลังส่งผู้ป่วยรอบก่อนที่ฐาน)':' (ออกพร้อมกัน)')+'</div>';
     }
     const col=TRIP_COLORS[i%TRIP_COLORS.length];
+    const tm=tripTime(t.rt, t.seg, t.mode);
     const wp=t.pts.map(p=>p.lat+','+p.lng).join('|');
     const g='https://www.google.com/maps/dir/?api=1&origin='+base.lat+','+base.lng+'&destination='+base.lat+','+base.lng+'&waypoints='+encodeURIComponent(wp)+'&travelmode=driving';
+    const title=t.us.map(u=>u.v.icon+' '+u.name).join(' + ');
+    let detail='';
+    if(t.mode==='mixed'){
+      detail='<div class="meta">🚗 ช่วงถนนแห้ง '+t.seg.dryKm.toFixed(1)+' กม. (~'+Math.round(tm.dryMin)+' นาที) → ⚓ เปลี่ยนเป็นเรือ → 🚤 ช่วงน้ำท่วม '+t.seg.wetKm.toFixed(1)+' กม. (~'+Math.round(tm.wetMin)+' นาที)</div>';
+    } else {
+      detail='<div class="meta">📏 '+(t.rt.distance/1000).toFixed(1)+' กม. · ⏱ ~'+Math.round(tm.totMin)+' นาที · '+clsLabel(t.seg.wetKm)+'</div>';
+    }
     html+='<div class="route-card" style="border-left:5px solid '+col+'" onclick="focusTrip('+i+')">'
-      +'<div class="dst">\u0e40\u0e17\u0e35\u0e48\u0e22\u0e27\u0e17\u0e35\u0e48 '+(i+1)+' \u00b7 '+t.v.icon+' '+t.unit+(t.warn?'<span class="tagflood">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e04\u0e31\u0e19\u0e17\u0e35\u0e48\u0e40\u0e2b\u0e21\u0e32\u0e30 \u2014 \u0e40\u0e2a\u0e35\u0e48\u0e22\u0e07</span>':'')+'</div>'
-      +'<div class="meta">\u0e23\u0e31\u0e1a: '+t.pts.map(p=>sevMeta[p.sev].ic+'#'+p.id).join(', ')+' &nbsp;('+t.pts.length+'/'+t.v.cap+' \u0e17\u0e35\u0e48\u0e19\u0e31\u0e48\u0e07)</div>'
-      +'<div class="meta">\ud83d\udccf '+(t.rt.distance/1000).toFixed(1)+' \u0e01\u0e21. \u00b7 \u23f1 ~'+Math.round(t.rt.duration/60)+' \u0e19\u0e32\u0e17\u0e35 \u00b7 '+clsLabel(t.floodKm)+'</div>'
-      +'<a class="gmap" href="'+g+'" target="_blank" onclick="event.stopPropagation()">\ud83d\uddfa\ufe0f \u0e19\u0e33\u0e17\u0e32\u0e07\u0e14\u0e49\u0e27\u0e22 Google Maps \u2192</a></div>';
-    const lyr=L.geoJSON(t.rt.geometry,{style:{color:col,weight:5,opacity:.85}}).bindPopup('\u0e40\u0e17\u0e35\u0e48\u0e22\u0e27\u0e17\u0e35\u0e48 '+(i+1)+' \u00b7 '+t.v.icon+' '+t.unit+'<br>\u0e23\u0e31\u0e1a\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22 '+t.pts.length+' \u0e04\u0e19 (\u0e23\u0e2d\u0e1a\u0e17\u0e35\u0e48 '+t.round+')');
-    lyr.addTo(map); tripLayers.push(lyr);
+      +'<div class="dst">ภารกิจที่ '+(i+1)+' · '+title+(t.warn?'<span class="tagflood">ไม่มีคันที่เหมาะ — เสี่ยง</span>':'')+'</div>'
+      +'<div class="meta">'+MODE_TXT[t.mode]+' · รับ: '+t.pts.map(p=>sevMeta[p.sev].ic+'#'+p.id).join(', ')+' ('+t.pts.length+'/'+t.cap+' ที่นั่ง)</div>'
+      +detail
+      +'<a class="gmap" href="'+g+'" target="_blank" onclick="event.stopPropagation()">🗺️ นำทางด้วย Google Maps →</a></div>';
+    const grp=L.featureGroup();
+    t.seg.dry.forEach(l=>grp.addLayer(L.geoJSON(l,{style:{color:col,weight:5,opacity:.9}})));
+    t.seg.wet.forEach(l=>grp.addLayer(L.geoJSON(l,{style:{color:col,weight:4,opacity:.85,dashArray:'5 9'}})));
+    if(t.mode==='mixed' && t.seg.transfer)
+      grp.addLayer(L.marker(t.seg.transfer,{icon:L.divIcon({html:'<div style="font-size:20px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))">⚓</div>',className:'',iconSize:[20,20],iconAnchor:[10,10]})}).bindPopup('⚓ จุดเปลี่ยนถ่าย รถ ↔ เรือ<br>ภารกิจที่ '+(i+1)));
+    grp.bindPopup('ภารกิจที่ '+(i+1)+' · '+title+'<br>'+MODE_TXT[t.mode]+'<br>รับผู้ป่วย '+t.pts.length+' คน (รอบที่ '+t.round+')');
+    grp.addTo(map); tripLayers.push(grp);
   });
   box.innerHTML=html;
   if(tripLayers.length) map.fitBounds(L.featureGroup(tripLayers).getBounds().pad(0.15));
-  document.getElementById('status2').innerHTML='\u2705 \u0e27\u0e32\u0e07\u0e41\u0e1c\u0e19\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 '+trips.length+' \u0e40\u0e17\u0e35\u0e48\u0e22\u0e27 / '+nR+' \u0e23\u0e2d\u0e1a (\u0e19\u0e49\u0e33\u0e17\u0e48\u0e27\u0e21\u0e1b\u0e35 '+hazSel.value+')';
+  document.getElementById('status2').innerHTML='✅ วางแผนสำเร็จ '+trips.length+' ภารกิจ / '+nR+' รอบ (น้ำท่วมปี '+hazSel.value+') — เส้นทึบ = รถ, เส้นประ = เรือ';
 }
 function focusTrip(i){
   document.querySelectorAll('.route-card').forEach((c,j)=>c.classList.toggle('sel', j===i));
