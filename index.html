@@ -39,7 +39,6 @@ select{width:100%;padding:6px;border:1px solid #c8d6e6;border-radius:6px;font-si
 .leaflet-popup-content{font-size:12.5px;line-height:1.5;}
 .leaflet-popup-content b{color:var(--navy);}
 footer{background:var(--navy);color:#9fb8d2;font-size:10.5px;padding:4px 16px;flex-shrink:0;}
-/* Phase II panel */
 .p2step{margin-bottom:12px;border:1px solid #e2eaf3;border-radius:8px;padding:10px 12px;}
 .p2step h3{font-size:12.5px;color:var(--navy);margin-bottom:8px;}
 .p2step h3 .n{display:inline-flex;width:18px;height:18px;border-radius:50%;background:var(--blue);color:#fff;align-items:center;justify-content:center;font-size:11px;margin-right:6px;}
@@ -60,7 +59,6 @@ footer{background:var(--navy);color:#9fb8d2;font-size:10.5px;padding:4px 16px;fl
 .tagbest{background:var(--green);color:#fff;font-size:10px;border-radius:8px;padding:1px 7px;margin-left:5px;}
 .tagflood{background:#e8604c;color:#fff;font-size:10px;border-radius:8px;padding:1px 7px;margin-left:5px;}
 #status2{font-size:11.5px;color:#68809a;margin-top:6px;line-height:1.5;}
-/* modal */
 #infoModal{display:none;position:fixed;inset:0;background:rgba(10,25,45,.8);z-index:3000;}
 #infoModal.open{display:block;}
 #infoModal iframe{position:absolute;inset:4% 5%;width:90%;height:92%;border:none;border-radius:12px;background:#0f2438;}
@@ -82,7 +80,6 @@ footer{background:var(--navy);color:#9fb8d2;font-size:10.5px;padding:4px 16px;fl
 </header>
 <div id="main">
   <div id="sidebar">
-    <!-- Phase I panel -->
     <div id="panel1" style="display:none">
       <div class="group"><h3>ขอบเขตการปกครอง</h3><div class="items" id="gAdmin"></div></div>
       <div class="group"><h3>สถานพยาบาลและสถานี</h3><div class="items" id="gPoint"></div></div>
@@ -94,7 +91,6 @@ footer{background:var(--navy);color:#9fb8d2;font-size:10.5px;padding:4px 16px;fl
       </div>
       <div class="note">ข้อมูลทุกชั้นถูก clip ให้เหลือเฉพาะพื้นที่จังหวัดปทุมธานี • Phase I: รวบรวมข้อมูล GIS พื้นฐาน</div>
     </div>
-    <!-- Phase II panel -->
     <div id="panel2">
       <div class="p2step">
         <h3><span class="n">1</span>กำหนดตำแหน่งผู้ป่วย</h3>
@@ -189,7 +185,170 @@ for(const [key,cfg] of Object.entries(LAYERS)){
   if(cfg.on) toggleLayer(key, true);
 }
 
-// ---- Phase I flood year layer ----
 let floodLayer = null;
 const floodRow = document.createElement('label'); floodRow.className='layer-row';
-floodRow.innerHTML = `<input type="checkbox" id="
+floodRow.innerHTML = `<input type="checkbox" id="cb_flood" checked> <span class="sw" style="background:#3b7dd8"></span> ขอบเขตน้ำท่วม (รายปี)`;
+document.getElementById('gFlood').appendChild(floodRow);
+const sel = document.getElementById('yearSel');
+FLOOD_YEARS.forEach(y=>{ const o=document.createElement('option'); o.value=y; o.textContent='พ.ศ. '+(y+543)+' (ค.ศ. '+y+')'; sel.appendChild(o); });
+sel.value = 2011;
+async function loadFlood(){
+  if(floodLayer){ map.removeLayer(floodLayer); floodLayer=null; }
+  if(!document.getElementById('cb_flood').checked) return;
+  try{
+    const gj = await getData('flood_'+sel.value+'.geojson');
+    const hint = document.querySelector('#yearBox .hint');
+    if(!gj.features || !gj.features.length){ hint.innerHTML='<span style="color:#c0392b">ปี พ.ศ. '+(+sel.value+543)+' ไม่พบพื้นที่น้ำท่วมในเขต จ.ปทุมธานี</span>'; return; }
+    hint.textContent='แสดงขอบเขตน้ำท่วมปี พ.ศ. '+(+sel.value+543);
+    floodLayer = L.geoJSON(gj, {style:{color:'#1e5ba8',weight:.6,fillColor:'#3b7dd8',fillOpacity:.5}}).addTo(map);
+  }catch(e){}
+}
+sel.addEventListener('change', loadFlood);
+document.getElementById('cb_flood').addEventListener('change', loadFlood);
+
+// ==================== PHASE II ====================
+const hazSel = document.getElementById('hazSel');
+[...FLOOD_YEARS].reverse().forEach(y=>{ const o=document.createElement('option'); o.value=y; o.textContent='น้ำท่วมปี พ.ศ. '+(y+543)+' (ค.ศ. '+y+')'; hazSel.appendChild(o); });
+hazSel.value = 2011;
+
+let patientMarker=null, pinArmed=false, hazLayer=null, routeLayers=[], routesData=[];
+const patientIcon = L.divIcon({html:'<div style="font-size:30px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))">🧍</div>',className:'',iconSize:[30,34],iconAnchor:[15,32]});
+
+function armPin(){
+  pinArmed = true;
+  const b=document.getElementById('pinBtn'); b.classList.add('arm'); b.textContent='👆 คลิกตำแหน่งผู้ป่วยบนแผนที่…';
+  map.getContainer().style.cursor='crosshair';
+}
+map.on('click', e=>{
+  if(!pinArmed) return;
+  pinArmed=false; map.getContainer().style.cursor='';
+  const b=document.getElementById('pinBtn'); b.classList.remove('arm'); b.textContent='📍 ปักหมุดใหม่';
+  setPatient(e.latlng);
+});
+function setPatient(latlng){
+  if(patientMarker) map.removeLayer(patientMarker);
+  patientMarker = L.marker(latlng, {icon:patientIcon, draggable:true}).addTo(map)
+    .bindPopup('ตำแหน่งผู้ป่วย (ลากเพื่อปรับ)');
+  patientMarker.on('dragend', ()=>updatePinHint());
+  updatePinHint();
+  document.getElementById('goBtn').disabled=false;
+}
+function updatePinHint(){
+  const ll=patientMarker.getLatLng();
+  document.getElementById('pinHint').innerHTML='✅ ผู้ป่วยที่ <b>'+ll.lat.toFixed(5)+', '+ll.lng.toFixed(5)+'</b> (ลากหมุดปรับได้)';
+}
+
+async function showHazard(){
+  if(hazLayer){ map.removeLayer(hazLayer); hazLayer=null; }
+  const gj = await getData('flood_'+hazSel.value+'.geojson');
+  if(gj.features && gj.features.length)
+    hazLayer = L.geoJSON(gj, {style:{color:'#1e5ba8',weight:.6,fillColor:'#3b7dd8',fillOpacity:.42},interactive:false}).addTo(map);
+  return gj;
+}
+hazSel.addEventListener('change', ()=>{ if(document.getElementById('panel2').style.display!=='none') showHazard(); });
+
+function clearRoutes(){ routeLayers.forEach(l=>map.removeLayer(l)); routeLayers=[]; routesData=[]; document.getElementById('results').innerHTML=''; }
+
+function assessFlood(routeCoords, floodFeats){
+  const line = turf.lineString(routeCoords);
+  const lenKm = turf.length(line);
+  const step = Math.max(0.1, lenKm/120);
+  let hit = 0, total = 0;
+  for(let d=0; d<=lenKm; d+=step){
+    const pt = turf.along(line, d); total++;
+    for(const f of floodFeats){ if(turf.booleanPointInPolygon(pt, f)){ hit++; break; } }
+  }
+  return {floodKm: lenKm*hit/Math.max(total,1), lenKm};
+}
+function vehiclesFor(fKm, dstFlooded){
+  if(dstFlooded) return {list:['🚤 เรือ (จุดหมายอยู่ในเขตน้ำท่วม)'], cls:'warn', label:'ต้องใช้เรือ'};
+  if(fKm===0)   return {list:['🚑 รถพยาบาล','🚗 รถยนต์ทั่วไป','🏍️ จักรยานยนต์'], cls:'', label:'ถนนแห้งตลอดเส้นทาง'};
+  if(fKm<0.5)   return {list:['🚑 รถพยาบาล (ระวังช่วงน้ำท่วม)','🛻 รถกระบะ/รถยกสูง'], cls:'', label:'ผ่านเขตน้ำท่วมช่วงสั้น ~'+(fKm*1000).toFixed(0)+' ม.'};
+  if(fKm<2)     return {list:['🛻 รถยกสูง','🚛 รถทหาร/รถบรรทุกใหญ่'], cls:'warn', label:'ผ่านเขตน้ำท่วม ~'+fKm.toFixed(1)+' กม.'};
+  return {list:['🚛 รถทหาร','🚤 เรือท้องแบน (บางช่วง)'], cls:'warn', label:'ผ่านเขตน้ำท่วมยาว ~'+fKm.toFixed(1)+' กม.'};
+}
+
+async function findRoutes(){
+  if(!patientMarker) return;
+  const status = document.getElementById('status2');
+  const goBtn = document.getElementById('goBtn');
+  goBtn.disabled = true; clearRoutes();
+  try{
+    status.textContent = '⏳ โหลดข้อมูลสถานการณ์น้ำท่วม…';
+    const [hosp, floodGj] = await Promise.all([getData('hospital.geojson'), showHazard()]);
+    const floodFeats = (floodGj.features||[]);
+    const p = patientMarker.getLatLng();
+    const pPt = turf.point([p.lng, p.lat]);
+    const patientFlooded = floodFeats.some(f=>turf.booleanPointInPolygon(pPt,f));
+    const cands = hosp.features.map(f=>{
+      const c=f.geometry.coordinates;
+      return {name:f.properties.Agency||'สถานพยาบาล', dept:f.properties.Department||'', lat:c[1], lng:c[0],
+        dist:turf.distance(pPt, turf.point(c)),
+        flooded: floodFeats.some(ff=>turf.booleanPointInPolygon(turf.point(c),ff))};
+    }).sort((a,b)=>a.dist-b.dist);
+    const safe = cands.filter(c=>!c.flooded).slice(0,4);
+    const near = cands.slice(0,2).filter(c=>!safe.includes(c));
+    const targets = [...safe, ...near].slice(0,5);
+    status.textContent = '⏳ คำนวณเส้นทาง '+targets.length+' ปลายทาง (OSRM)…';
+    const results = [];
+    for(const t of targets){
+      try{
+        const q = `${p.lng},${p.lat};${t.lng},${t.lat}?overview=full&geometries=geojson`;
+        let j = null;
+        for(const base of ['https://routing.openstreetmap.de/routed-car/route/v1/driving/','https://router.project-osrm.org/route/v1/driving/']){
+          try{ const r = await fetch(base+q); j = await r.json(); if(j.code==='Ok') break; }catch(e){ j=null; }
+        }
+        if(!j || j.code!=='Ok' || !j.routes.length) continue;
+        const rt = j.routes[0];
+        const {floodKm} = assessFlood(rt.geometry.coordinates, floodFeats);
+        results.push({t, rt, floodKm});
+      }catch(e){}
+    }
+    if(!results.length){ status.innerHTML='❌ คำนวณเส้นทางไม่สำเร็จ (บริการ OSRM อาจไม่ตอบสนอง) — ลองใหม่อีกครั้ง'; return; }
+    results.sort((a,b)=> (a.t.flooded-b.t.flooded) || (a.floodKm-b.floodKm) || (a.rt.duration-b.rt.duration));
+    const sev = document.getElementById('sevSel').value;
+    const resBox = document.getElementById('results');
+    let html = patientFlooded ? '<div class="note" style="margin-bottom:8px;background:#fdecea;color:#b03a2e">⚠️ ตำแหน่งผู้ป่วยอยู่ในเขตน้ำท่วม '+hazSel.value+' — การเข้าถึงจุดแรกอาจต้องใช้เรือ</div>' : '';
+    if(sev==='red') html += '<div class="note" style="margin-bottom:8px;background:#fff3cd;color:#7a5c00">🔴 ผู้ป่วยวิกฤต: แนะนำเส้นทางเร็วที่สุดที่ปลายทางปลอดภัย + ประสาน 1669</div>';
+    results.forEach((res,i)=>{
+      const veh = vehiclesFor(res.floodKm, res.t.flooded);
+      const gurl = `https://www.google.com/maps/dir/?api=1&origin=${p.lat},${p.lng}&destination=${res.t.lat},${res.t.lng}&travelmode=driving`;
+      html += `<div class="route-card ${i===0?'best':''}" id="rc${i}" onclick="focusRoute(${i})">
+        <div class="dst">${i+1}. ${res.t.name}${i===0?'<span class="tagbest">แนะนำ</span>':''}${res.t.flooded?'<span class="tagflood">รพ.ในเขตน้ำท่วม</span>':''}</div>
+        <div class="meta">🚗 ${(res.rt.distance/1000).toFixed(1)} กม. · ⏱ ~${Math.round(res.rt.duration/60)} นาที · ${veh.label}</div>
+        <div>${veh.list.map(v=>`<span class="veh ${veh.cls}">${v}</span>`).join('')}</div>
+        <a class="gmap" href="${gurl}" target="_blank" onclick="event.stopPropagation()">🗺️ นำทางด้วย Google Maps →</a>
+      </div>`;
+      const col = i===0 ? '#00b894' : '#7f8fa6';
+      const lyr = L.geoJSON(res.rt.geometry, {style:{color:col, weight:i===0?6:3.5, opacity:i===0?.95:.65, dashArray:i===0?null:'7 6'}})
+        .bindPopup(`<b>${res.t.name}</b><br>${(res.rt.distance/1000).toFixed(1)} กม. · ~${Math.round(res.rt.duration/60)} นาที<br>${veh.label}`);
+      lyr.addTo(map); routeLayers.push(lyr);
+      const hIcon = L.divIcon({html:`<div style="background:${res.t.flooded?'#e8604c':'#00b894'};color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);font-weight:700">${i+1}</div>`,className:'',iconSize:[24,24],iconAnchor:[12,12]});
+      const mk = L.marker([res.t.lat,res.t.lng],{icon:hIcon}).bindPopup('<b>'+res.t.name+'</b><br>'+res.t.dept).addTo(map);
+      routeLayers.push(mk);
+    });
+    resBox.innerHTML = html;
+    routesData = results;
+    const all = L.featureGroup(routeLayers); map.fitBounds(all.getBounds().pad(0.15));
+    status.innerHTML = '✅ พบ '+results.length+' เส้นทาง — เรียงตามความปลอดภัยและเวลาเดินทาง (ประเมินจากน้ำท่วมปี '+hazSel.value+')';
+  } finally { goBtn.disabled=false; }
+}
+function focusRoute(i){
+  document.querySelectorAll('.route-card').forEach((c,j)=>c.classList.toggle('sel', j===i));
+  const lyr = routeLayers[i*2];
+  if(lyr){ map.fitBounds(lyr.getBounds().pad(0.2)); lyr.openPopup(); }
+}
+
+function showPhase(n){
+  document.getElementById('tab1').classList.toggle('active', n===1);
+  document.getElementById('tab2').classList.toggle('active', n===2);
+  document.getElementById('panel1').style.display = n===1?'block':'none';
+  document.getElementById('panel2').style.display = n===2?'block':'none';
+  if(n===1){ if(hazLayer){map.removeLayer(hazLayer); hazLayer=null;} loadFlood(); }
+  else { if(floodLayer){map.removeLayer(floodLayer); floodLayer=null;} showHazard(); }
+  setTimeout(()=>map.invalidateSize(), 60);
+}
+showPhase(2);
+</script>
+</body>
+</html>
