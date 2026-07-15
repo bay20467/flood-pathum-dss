@@ -353,61 +353,84 @@ function clearTrips(){ tripLayers.forEach(l=>map.removeLayer(l)); tripLayers=[];
 
 async function planMission(){
   const status=document.getElementById('status2'); const goBtn=document.getElementById('goBtn');
-  if(fleetCap()===0){ status.innerHTML='❌ ยังไม่ได้กำหนดยานพาหนะ — กด + ในแถบขวา แล้วกด Save'; return; }
+  if(fleetCap()===0){ status.innerHTML='\u274c \u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e22\u0e32\u0e19\u0e1e\u0e32\u0e2b\u0e19\u0e30 \u2014 \u0e01\u0e14 + \u0e43\u0e19\u0e41\u0e16\u0e1a\u0e02\u0e27\u0e32 \u0e41\u0e25\u0e49\u0e27\u0e01\u0e14 Save'; return; }
   goBtn.disabled=true; clearTrips();
   try{
-    status.textContent='⏳ โหลดสถานการณ์น้ำท่วม…';
+    status.textContent='\u23f3 \u0e42\u0e2b\u0e25\u0e14\u0e2a\u0e16\u0e32\u0e19\u0e01\u0e32\u0e23\u0e13\u0e4c\u0e19\u0e49\u0e33\u0e17\u0e48\u0e27\u0e21\u2026';
     const haz=await showHazard(); const feats=haz.features||[];
     const ordered=[...patients].sort((a,b)=>(sevMeta[a.sev].rank-sevMeta[b.sev].rank)||(dist2(base,a)-dist2(base,b)));
     let remaining=[...ordered];
-    const trips=[]; const useCnt={};
-    const avail=VEHICLES.filter(v=>(fleet[v.id]||0)>0).sort((a,b)=>b.cap-a.cap);
-    let guard=0;
-    while(remaining.length && guard++<10){
-      status.textContent='⏳ วางแผนเที่ยวที่ '+(trips.length+1)+'… (เหลือผู้ป่วยอีก '+remaining.length+' คน)';
-      let planned=null, fallback=null;
-      for(const v of avail){
-        const pts=nnOrder(base, remaining.slice(0, Math.min(v.cap, remaining.length)));
-        const rt=await osrmRoute([base,...pts,base]);
-        if(!rt) continue;
-        const {floodKm}=assessFlood(rt.geometry.coordinates, feats);
-        const cand={v,pts,rt,floodKm,need:clsNeeded(floodKm)};
-        if(v.cls>=cand.need){ planned=cand; break; }
-        if(!fallback || v.cls>fallback.v.cls) fallback=cand;
+    const units=[];
+    VEHICLES.forEach(v=>{ for(let k=1;k<=(fleet[v.id]||0);k++) units.push({v, name:v.name+' #'+k}); });
+    const trips=[]; let round=1, guard=0;
+    while(remaining.length && guard++<15){
+      const free=[...units].sort((a,b)=>b.v.cap-a.v.cap);
+      let used=false;
+      while(free.length && remaining.length){
+        status.textContent='\u23f3 \u0e23\u0e2d\u0e1a\u0e17\u0e35\u0e48 '+round+' \u2014 \u0e27\u0e32\u0e07\u0e41\u0e1c\u0e19\u0e40\u0e17\u0e35\u0e48\u0e22\u0e27\u0e17\u0e35\u0e48 '+(trips.length+1)+'\u2026 (\u0e40\u0e2b\u0e25\u0e37\u0e2d\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22 '+remaining.length+' \u0e04\u0e19)';
+        let u=free[0];
+        let batch=nnOrder(base, remaining.slice(0, Math.min(u.v.cap, remaining.length)));
+        let rt=await osrmRoute([base,...batch,base]);
+        if(!rt){ status.innerHTML='\u274c \u0e04\u0e33\u0e19\u0e27\u0e13\u0e40\u0e2a\u0e49\u0e19\u0e17\u0e32\u0e07\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 (OSRM \u0e44\u0e21\u0e48\u0e15\u0e2d\u0e1a\u0e2a\u0e19\u0e2d\u0e07) \u2014 \u0e25\u0e2d\u0e07\u0e43\u0e2b\u0e21\u0e48\u0e2d\u0e35\u0e01\u0e04\u0e23\u0e31\u0e49\u0e07'; return; }
+        let fa=assessFlood(rt.geometry.coordinates, feats); let need=clsNeeded(fa.floodKm); let warn=false;
+        if(u.v.cls<need){
+          const alt=free.filter(x=>x.v.cls>=need).sort((a,b)=>b.v.cap-a.v.cap)[0];
+          if(alt){
+            u=alt;
+            if(batch.length>u.v.cap){
+              batch=nnOrder(base, remaining.slice(0, u.v.cap));
+              rt=await osrmRoute([base,...batch,base]);
+              if(!rt){ status.innerHTML='\u274c OSRM \u0e44\u0e21\u0e48\u0e15\u0e2d\u0e1a\u0e2a\u0e19\u0e2d\u0e07 \u2014 \u0e25\u0e2d\u0e07\u0e43\u0e2b\u0e21\u0e48'; return; }
+              fa=assessFlood(rt.geometry.coordinates, feats); need=clsNeeded(fa.floodKm);
+              warn=u.v.cls<need;
+            }
+          } else {
+            free.sort((a,b)=>(b.v.cls-a.v.cls)||(b.v.cap-a.v.cap)); u=free[0]; warn=true;
+            if(batch.length>u.v.cap){
+              batch=nnOrder(base, remaining.slice(0, u.v.cap));
+              rt=await osrmRoute([base,...batch,base]);
+              if(!rt){ status.innerHTML='\u274c OSRM \u0e44\u0e21\u0e48\u0e15\u0e2d\u0e1a\u0e2a\u0e19\u0e2d\u0e07 \u2014 \u0e25\u0e2d\u0e07\u0e43\u0e2b\u0e21\u0e48'; return; }
+              fa=assessFlood(rt.geometry.coordinates, feats); need=clsNeeded(fa.floodKm); warn=u.v.cls<need;
+            }
+          }
+        }
+        free.splice(free.indexOf(u),1);
+        trips.push({v:u.v, unit:u.name, round, pts:batch, rt, floodKm:fa.floodKm, warn});
+        const ids=new Set(batch.map(p=>p.id));
+        remaining=remaining.filter(p=>!ids.has(p.id));
+        used=true;
       }
-      if(!planned){
-        if(!fallback){ status.innerHTML='❌ คำนวณเส้นทางไม่สำเร็จ (OSRM ไม่ตอบสนอง) — ลองใหม่อีกครั้ง'; return; }
-        planned=fallback; planned.warn=true;
-      }
-      useCnt[planned.v.id]=(useCnt[planned.v.id]||0)+1;
-      const nUnit=fleet[planned.v.id]||1;
-      planned.unit=planned.v.name+' #'+(((useCnt[planned.v.id]-1)%nUnit)+1);
-      planned.round=Math.ceil(useCnt[planned.v.id]/nUnit);
-      trips.push(planned);
-      const ids=new Set(planned.pts.map(p=>p.id));
-      remaining=remaining.filter(p=>!ids.has(p.id));
+      if(!used) break;
+      round++;
     }
-    renderTrips(trips);
+    renderTrips(trips, round-1);
   } finally { goBtn.disabled=false; updateGo(); }
 }
-function renderTrips(trips){
+function renderTrips(trips, rounds){
   const box=document.getElementById('results');
-  let html='<div class="note" style="margin-bottom:8px">📋 ผู้ป่วย '+patients.length+' คน · ความจุรวม '+fleetCap()+' คน/รอบ → ใช้ <b>'+trips.length+'</b> เที่ยว'+(trips.some(t=>t.round>1)?' · <b style="color:#b03a2e">มีการส่งผู้ป่วยที่ฐานแล้ววนกลับไปรับรอบถัดไป</b>':'')+'</div>';
+  const nR = rounds || Math.max(...trips.map(t=>t.round));
+  let html='<div class="note" style="margin-bottom:8px">\ud83d\udccb \u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22 '+patients.length+' \u0e04\u0e19 \u00b7 \u0e04\u0e27\u0e32\u0e21\u0e08\u0e38\u0e23\u0e27\u0e21 '+fleetCap()+' \u0e04\u0e19/\u0e23\u0e2d\u0e1a \u2192 <b>'+trips.length+'</b> \u0e40\u0e17\u0e35\u0e48\u0e22\u0e27 \u0e43\u0e19 <b>'+nR+'</b> \u0e23\u0e2d\u0e1a'
+    +(nR>1?' \u00b7 <b style="color:#b03a2e">\u0e04\u0e27\u0e32\u0e21\u0e08\u0e38\u0e44\u0e21\u0e48\u0e1e\u0e2d\u0e43\u0e19\u0e23\u0e2d\u0e1a\u0e40\u0e14\u0e35\u0e22\u0e27 \u2014 \u0e15\u0e49\u0e2d\u0e07\u0e2a\u0e48\u0e07\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22\u0e17\u0e35\u0e48\u0e10\u0e32\u0e19\u0e41\u0e25\u0e49\u0e27\u0e27\u0e19\u0e01\u0e25\u0e31\u0e1a\u0e44\u0e1b\u0e23\u0e31\u0e1a</b>':' \u00b7 \u0e17\u0e38\u0e01\u0e04\u0e31\u0e19\u0e2d\u0e2d\u0e01\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e01\u0e31\u0e19\u0e44\u0e14\u0e49')+'</div>';
+  let lastRound=0;
   trips.forEach((t,i)=>{
+    if(t.round!==lastRound){
+      lastRound=t.round;
+      html+='<div style="font-size:11.5px;font-weight:700;color:var(--navy);margin:10px 0 5px">\ud83d\udd01 \u0e23\u0e2d\u0e1a\u0e17\u0e35\u0e48 '+t.round+(t.round>1?' (\u0e2b\u0e25\u0e31\u0e07\u0e2a\u0e48\u0e07\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22\u0e23\u0e2d\u0e1a\u0e01\u0e48\u0e2d\u0e19\u0e17\u0e35\u0e48\u0e10\u0e32\u0e19)':' (\u0e2d\u0e2d\u0e01\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e01\u0e31\u0e19)')+'</div>';
+    }
     const col=TRIP_COLORS[i%TRIP_COLORS.length];
     const wp=t.pts.map(p=>p.lat+','+p.lng).join('|');
     const g='https://www.google.com/maps/dir/?api=1&origin='+base.lat+','+base.lng+'&destination='+base.lat+','+base.lng+'&waypoints='+encodeURIComponent(wp)+'&travelmode=driving';
-    html+=`<div class="route-card" style="border-left:5px solid ${col}" onclick="focusTrip(${i})">
-      <div class="dst">เที่ยวที่ ${i+1} · ${t.v.icon} ${t.unit}${t.round>1?' <small>(รอบที่ '+t.round+')</small>':''}${t.warn?'<span class="tagflood">ไม่มีคันที่เหมาะ — เสี่ยง</span>':''}</div>
-      <div class="meta">รับ: ${t.pts.map(p=>sevMeta[p.sev].ic+'#'+p.id).join(', ')} &nbsp;(${t.pts.length}/${t.v.cap} ที่นั่ง)</div>
-      <div class="meta">📏 ${(t.rt.distance/1000).toFixed(1)} กม. · ⏱ ~${Math.round(t.rt.duration/60)} นาที · ${clsLabel(t.floodKm)}</div>
-      <a class="gmap" href="${g}" target="_blank" onclick="event.stopPropagation()">🗺️ นำทางด้วย Google Maps →</a></div>`;
-    const lyr=L.geoJSON(t.rt.geometry,{style:{color:col,weight:5,opacity:.85}}).bindPopup('เที่ยวที่ '+(i+1)+' · '+t.v.icon+' '+t.unit+'<br>รับผู้ป่วย '+t.pts.length+' คน');
+    html+='<div class="route-card" style="border-left:5px solid '+col+'" onclick="focusTrip('+i+')">'
+      +'<div class="dst">\u0e40\u0e17\u0e35\u0e48\u0e22\u0e27\u0e17\u0e35\u0e48 '+(i+1)+' \u00b7 '+t.v.icon+' '+t.unit+(t.warn?'<span class="tagflood">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e04\u0e31\u0e19\u0e17\u0e35\u0e48\u0e40\u0e2b\u0e21\u0e32\u0e30 \u2014 \u0e40\u0e2a\u0e35\u0e48\u0e22\u0e07</span>':'')+'</div>'
+      +'<div class="meta">\u0e23\u0e31\u0e1a: '+t.pts.map(p=>sevMeta[p.sev].ic+'#'+p.id).join(', ')+' &nbsp;('+t.pts.length+'/'+t.v.cap+' \u0e17\u0e35\u0e48\u0e19\u0e31\u0e48\u0e07)</div>'
+      +'<div class="meta">\ud83d\udccf '+(t.rt.distance/1000).toFixed(1)+' \u0e01\u0e21. \u00b7 \u23f1 ~'+Math.round(t.rt.duration/60)+' \u0e19\u0e32\u0e17\u0e35 \u00b7 '+clsLabel(t.floodKm)+'</div>'
+      +'<a class="gmap" href="'+g+'" target="_blank" onclick="event.stopPropagation()">\ud83d\uddfa\ufe0f \u0e19\u0e33\u0e17\u0e32\u0e07\u0e14\u0e49\u0e27\u0e22 Google Maps \u2192</a></div>';
+    const lyr=L.geoJSON(t.rt.geometry,{style:{color:col,weight:5,opacity:.85}}).bindPopup('\u0e40\u0e17\u0e35\u0e48\u0e22\u0e27\u0e17\u0e35\u0e48 '+(i+1)+' \u00b7 '+t.v.icon+' '+t.unit+'<br>\u0e23\u0e31\u0e1a\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22 '+t.pts.length+' \u0e04\u0e19 (\u0e23\u0e2d\u0e1a\u0e17\u0e35\u0e48 '+t.round+')');
     lyr.addTo(map); tripLayers.push(lyr);
   });
   box.innerHTML=html;
   if(tripLayers.length) map.fitBounds(L.featureGroup(tripLayers).getBounds().pad(0.15));
-  document.getElementById('status2').innerHTML='✅ วางแผนสำเร็จ '+trips.length+' เที่ยว (ประเมินจากน้ำท่วมปี '+hazSel.value+')';
+  document.getElementById('status2').innerHTML='\u2705 \u0e27\u0e32\u0e07\u0e41\u0e1c\u0e19\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 '+trips.length+' \u0e40\u0e17\u0e35\u0e48\u0e22\u0e27 / '+nR+' \u0e23\u0e2d\u0e1a (\u0e19\u0e49\u0e33\u0e17\u0e48\u0e27\u0e21\u0e1b\u0e35 '+hazSel.value+')';
 }
 function focusTrip(i){
   document.querySelectorAll('.route-card').forEach((c,j)=>c.classList.toggle('sel', j===i));
