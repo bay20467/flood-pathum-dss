@@ -1,0 +1,10 @@
+{
+"type": "FeatureCollection",
+"name": "flood_2021",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"xy_coordinate_resolution": 1e-05,
+"features": [
+{ "type": "Feature", "properties": { "year": 2021 }, "geometry": { "type": "Polygon", "coordinates": [ [ [ 100.51866, 14.12782 ], [ 100.51906, 14.12769 ], [ 100.51974, 14.12691 ], [ 100.51947, 14.12647 ], [ 100.51906, 14.12661 ], [ 100.51906, 14.12715 ], [ 100.51868, 14.12728 ], [ 100.51826, 14.12862 ], [ 100.51866, 14.12815 ], [ 100.51866, 14.12782 ] ] ] } },
+{ "type": "Feature", "properties": { "year": 2021 }, "geometry": { "type": "Polygon", "coordinates": [ [ [ 100.57564, 14.12443 ], [ 100.57497, 14.12443 ], [ 100.57497, 14.12459 ], [ 100.57564, 14.12501 ], [ 100.57564, 14.12443 ] ] ] } }
+]
+}

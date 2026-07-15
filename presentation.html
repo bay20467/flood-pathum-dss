@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>โครงการระบบสนับสนุนการตัดสินใจ อสม. — อุทกภัยปทุมธานี</title>
+<style>
+:root{--navy:#1a3a5c;--blue:#2f6db3;--light:#eaf2fa;--accent:#e8604c;--green:#00b894;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI','Sarabun',Tahoma,sans-serif;}
+html,body{height:100%;background:#0f2438;overflow:hidden;}
+.slide{position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;padding:6vh 8vw;color:#fff;}
+.slide.active{display:flex;animation:fade .45s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.kicker{color:#7fb3e8;font-size:15px;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;}
+h1{font-size:44px;line-height:1.25;margin-bottom:18px;}
+h2{font-size:32px;margin-bottom:22px;color:#fff;}
+p.lead{font-size:19px;color:#c9dcf0;line-height:1.8;max-width:900px;}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-top:26px;}
+.card{background:rgba(255,255,255,.07);border:1px solid rgba(127,179,232,.3);border-radius:14px;padding:20px;}
+.card h3{font-size:16.5px;color:#8ec3f5;margin-bottom:8px;}
+.card p,.card li{font-size:13.5px;color:#c9dcf0;line-height:1.65;}
+.card ul{padding-left:18px;}
+.phase-tag{display:inline-block;padding:4px 16px;border-radius:20px;font-size:13px;font-weight:700;margin-bottom:14px;}
+.p1{background:var(--accent);color:#fff;} .p2{background:var(--green);color:#fff;}
+.flow{display:flex;align-items:stretch;gap:10px;margin-top:26px;flex-wrap:wrap;}
+.step{flex:1;min-width:150px;background:rgba(255,255,255,.07);border:1px solid rgba(127,179,232,.3);border-radius:12px;padding:16px;position:relative;}
+.step .num{width:28px;height:28px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;margin-bottom:9px;}
+.step h4{font-size:14.5px;margin-bottom:6px;color:#fff;}
+.step p{font-size:12px;color:#b7cde4;line-height:1.55;}
+.arrow{align-self:center;font-size:22px;color:#5a86b5;}
+nav{position:fixed;bottom:18px;left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:10;}
+nav button{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:8px 22px;border-radius:22px;cursor:pointer;font-size:14px;}
+nav button:hover{background:var(--blue);}
+.dots{position:fixed;top:20px;right:24px;display:flex;gap:7px;z-index:10;}
+.dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.25);cursor:pointer;}
+.dot.on{background:var(--accent);}
+.pill{display:inline-block;background:rgba(232,96,76,.18);border:1px solid var(--accent);color:#ffb0a3;font-size:12.5px;padding:3px 13px;border-radius:14px;margin:5px 6px 0 0;}
+.pill.g{background:rgba(0,184,148,.15);border-color:var(--green);color:#8ef0d8;}
+table{border-collapse:collapse;margin-top:22px;width:100%;max-width:960px;}
+th,td{border:1px solid rgba(127,179,232,.35);padding:10px 14px;font-size:13.5px;text-align:left;color:#c9dcf0;}
+th{background:rgba(47,109,179,.35);color:#fff;font-size:14px;}
+a.btn{display:inline-block;margin-top:26px;background:var(--accent);color:#fff;text-decoration:none;padding:12px 30px;border-radius:26px;font-size:16px;font-weight:600;}
+.small{font-size:12px;color:#7d9cbd;margin-top:20px;}
+</style>
+</head>
+<body>
+
+<!-- 1 Title -->
+<section class="slide active">
+  <div class="kicker">Decision Support System · Pathum Thani</div>
+  <h1>ระบบสนับสนุนการตัดสินใจของ อสม.<br>เพื่อช่วยเหลือผู้ป่วยในภาวะอุทกภัย จังหวัดปทุมธานี</h1>
+  <p class="lead">แพลตฟอร์มข้อมูลภูมิสารสนเทศ (GIS) สำหรับอาสาสมัครสาธารณสุขประจำหมู่บ้าน (อสม.) ใช้วางแผน<b style="color:#fff">เส้นทางเข้าช่วยเหลือผู้ป่วย</b> และ<b style="color:#fff">ส่งต่อไปยังโรงพยาบาลที่ไม่ถูกน้ำท่วมหรือศูนย์อพยพ</b> ในสถานการณ์น้ำท่วม</p>
+  <div>
+    <span class="pill">Phase I — Big Data (ปัจจุบัน)</span>
+    <span class="pill g">Phase II — Analyse Data (ถัดไป)</span>
+  </div>
+</section>
+
+<!-- 2 Problem -->
+<section class="slide">
+  <div class="kicker">ที่มาและความสำคัญ</div>
+  <h2>เมื่อน้ำมา… อสม. ต้องตัดสินใจเร็วและถูกต้อง</h2>
+  <p class="lead">จังหวัดปทุมธานีเป็นพื้นที่ลุ่มต่ำริมแม่น้ำเจ้าพระยาที่เผชิญน้ำท่วมซ้ำซาก (เช่น มหาอุทกภัย พ.ศ. 2554) ผู้ป่วยติดเตียง ผู้ป่วยโรคเรื้อรัง และผู้สูงอายุ คือกลุ่มเปราะบางที่สุดเมื่อเส้นทางถูกตัดขาด</p>
+  <div class="cards">
+    <div class="card"><h3>คำถามที่ อสม. ต้องตอบ</h3><ul>
+      <li>ผู้ป่วยอยู่ตรงไหน อาการรุนแรงแค่ไหน</li>
+      <li>ถนนเส้นไหนยังใช้รถได้ เส้นไหนต้องใช้เรือ</li>
+      <li>โรงพยาบาล/ศูนย์อพยพใดที่ยังปลอดภัย</li></ul></div>
+    <div class="card"><h3>ปัญหาปัจจุบัน</h3><ul>
+      <li>ข้อมูลกระจัดกระจาย ไม่อยู่ในระบบเดียว</li>
+      <li>ไม่รู้ความลึก/ความเร็วน้ำบนเส้นทาง</li>
+      <li>ไม่มีเครื่องมือช่วยจัดลำดับความสำคัญ</li></ul></div>
+    <div class="card"><h3>แนวทางแก้</h3><ul>
+      <li>รวมข้อมูล GIS ทุกชั้นไว้ในเว็บแอปเดียว</li>
+      <li>วิเคราะห์ด้วยแบบจำลองการไหลของน้ำ</li>
+      <li>แนะนำเส้นทางช่วยเหลือ-ส่งต่อ</li></ul></div>
+  </div>
+</section>
+
+<!-- 3 Phase I -->
+<section class="slide">
+  <span class="phase-tag p1">Phase I — Big Data (กำลังดำเนินการ)</span>
+  <h2>รวบรวมข้อมูลภูมิสารสนเทศเข้าสู่แพลตฟอร์มเดียว</h2>
+  <div class="cards">
+    <div class="card"><h3>📍 ตำแหน่ง / กายภาพ</h3><ul>
+      <li>โรงพยาบาล / รพ.สต. / คลินิก (86 แห่งในจังหวัด)</li>
+      <li>สถานีวัดระดับน้ำ (เจ้าพระยา)</li>
+      <li>แม่น้ำ ลุ่มน้ำหลัก (สทนช.)</li>
+      <li>การใช้ที่ดิน พ.ศ. 2568</li>
+      <li>ขอบเขตจังหวัด / อำเภอ (7) / ตำบล (60)</li></ul></div>
+    <div class="card"><h3>🌊 พื้นที่น้ำท่วมในอดีต</h3><ul>
+      <li>ขอบเขตน้ำท่วมรายปี พ.ศ. 2548–2564 (GISTDA)</li>
+      <li>Clip ให้เหลือเฉพาะเขตจังหวัดปทุมธานี</li>
+      <li>เลือกดูรายปี เปรียบเทียบขอบเขตได้</li></ul></div>
+    <div class="card"><h3>🧍 ข้อมูลที่จะเพิ่มต่อไป</h3><ul>
+      <li>ตำแหน่งผู้ป่วย + โรคประจำตัว ยา เครื่องมือแพทย์</li>
+      <li>สมาชิกครัวเรือน / ผู้ดูแล (อายุ เพศ)</li>
+      <li>Facilities: ศูนย์ชุมชน ศาลาอเนกประสงค์ จุดรวมพล</li>
+      <li>ความสูงพื้นที่ ขนาดถนน ประเภทบ้าน เส้นทางอพยพ</li></ul></div>
+  </div>
+  <p class="small">ทุกชั้นข้อมูลจัดเก็บเป็น GeoJSON (WGS84) ผ่านกระบวนการ clip ด้วยขอบเขตจังหวัด แสดงผลบนเว็บแอป Leaflet</p>
+</section>
+
+<!-- 4 Phase II -->
+<section class="slide">
+  <span class="phase-tag p2">Phase II — Analyse Data (แผนงานถัดไป)</span>
+  <h2>วิเคราะห์ข้อมูลเพื่อการตัดสินใจ</h2>
+  <div class="flow">
+    <div class="step"><div class="num">1</div><h4>แบบจำลองการไหลของน้ำ</h4><p>จำลองน้ำท่วมที่รอบปีการเกิดซ้ำ Tr2, Tr5, Tr10, Tr25, Tr50, Tr100 ได้ความลึกและความเร็วการไหลรายจุด</p></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="num">2</div><h4>ประเมินพื้นที่เสี่ยง</h4><p>ซ้อนทับความลึกน้ำ ความเร็วน้ำ กับความเปราะบาง: ความรุนแรงของผู้ป่วย ประเภทบ้าน ความสูงพื้นที่</p></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="num">3</div><h4>วิเคราะห์เส้นทาง (Routing)</h4><p>หาเส้นทางเข้าถึงผู้ป่วยและส่งต่อ รพ./ศูนย์อพยพที่ปลอดภัย พิจารณาเกณฑ์ความลึกน้ำบนถนน (รถ/เรือ)</p></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="num">4</div><h4>สนับสนุนการตัดสินใจ อสม.</h4><p>จัดลำดับความสำคัญผู้ป่วย แนะนำเส้นทางและจุดหมายปลายทางแบบ near real-time</p></div>
+  </div>
+  <div style="margin-top:24px">
+    <span class="pill g">ความลึกน้ำ</span><span class="pill g">ความเร็วการไหล</span><span class="pill g">ความรุนแรงผู้ป่วย</span><span class="pill g">เส้นทางรถ / เรือ</span><span class="pill g">รพ.ปลอดภัย</span><span class="pill g">ศูนย์อพยพ</span>
+  </div>
+</section>
+
+<!-- 5 Data table -->
+<section class="slide">
+  <div class="kicker">ชั้นข้อมูลใน Phase I</div>
+  <h2>ข้อมูลที่รวบรวมแล้วในระบบ</h2>
+  <table>
+    <tr><th>ชั้นข้อมูล</th><th>แหล่งที่มา</th><th>รูปแบบ</th><th>สถานะ</th></tr>
+    <tr><td>โรงพยาบาล / สถานพยาบาล</td><td>กระทรวงสาธารณสุข</td><td>Point (86 แห่ง)</td><td>✅ นำเข้าแล้ว</td></tr>
+    <tr><td>ขอบเขตน้ำท่วม พ.ศ. 2548–2564</td><td>GISTDA</td><td>Polygon รายปี</td><td>✅ นำเข้าแล้ว (clip ปทุมธานี)</td></tr>
+    <tr><td>สถานีวัดระดับน้ำ</td><td>กรมชลประทาน</td><td>Point</td><td>✅ นำเข้าแล้ว</td></tr>
+    <tr><td>การใช้ที่ดิน พ.ศ. 2568</td><td>กรมพัฒนาที่ดิน</td><td>Polygon</td><td>✅ นำเข้าแล้ว</td></tr>
+    <tr><td>แม่น้ำ / ลุ่มน้ำหลัก</td><td>สทนช.</td><td>Polygon</td><td>✅ นำเข้าแล้ว</td></tr>
+    <tr><td>ขอบเขตปกครอง จ./อ./ต.</td><td>กรมการปกครอง</td><td>Polygon</td><td>✅ นำเข้าแล้ว</td></tr>
+    <tr><td>ตำแหน่ง + ข้อมูลผู้ป่วย</td><td>อสม. / รพ.สต.</td><td>Point</td><td>⏳ อยู่ระหว่างรวบรวม</td></tr>
+    <tr><td>ศูนย์อพยพ / จุดรวมพล</td><td>อปท. / ชุมชน</td><td>Point</td><td>⏳ อยู่ระหว่างรวบรวม</td></tr>
+  </table>
+</section>
+
+<!-- 6 CTA -->
+<section class="slide" style="align-items:flex-start">
+  <div class="kicker">เริ่มใช้งาน</div>
+  <h2>สำรวจแผนที่ Phase I ได้แล้ววันนี้</h2>
+  <p class="lead">เว็บแอปแสดงข้อมูลทุกชั้นบนแผนที่ interactive — เปิด/ปิดชั้นข้อมูล เลือกปีน้ำท่วม สลับแผนที่ถนน/ภาพดาวเทียม และคลิกดูรายละเอียดแต่ละตำแหน่ง</p>
+  <a class="btn" href="index.html">🗺️ เปิดเว็บแอปแผนที่ →</a>
+  <p class="small">โครงการวิจัยเพื่อสนับสนุน อสม. จังหวัดปทุมธานี · Phase I: Big Data Collection · อัปเดตกรกฎาคม 2569</p>
+</section>
+
+<div class="dots" id="dots"></div>
+<nav>
+  <button onclick="go(-1)">← ก่อนหน้า</button>
+  <button onclick="go(1)">ถัดไป →</button>
+</nav>
+<script>
+const slides=[...document.querySelectorAll('.slide')];let cur=0;
+const dots=document.getElementById('dots');
+slides.forEach((s,i)=>{const d=document.createElement('div');d.className='dot'+(i===0?' on':'');d.onclick=()=>show(i);dots.appendChild(d);});
+function show(i){cur=(i+slides.length)%slides.length;slides.forEach((s,j)=>s.classList.toggle('active',j===cur));[...dots.children].forEach((d,j)=>d.classList.toggle('on',j===cur));}
+function go(d){show(cur+d);}
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key===' ')go(1);if(e.key==='ArrowLeft')go(-1);});
+</script>
+</body>
+</html>
