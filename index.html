@@ -22,8 +22,20 @@ header .sub{font-size:11px;opacity:.75;}
 #infoBtn{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.5);color:#fff;font-size:16px;font-weight:700;font-style:italic;font-family:Georgia,serif;cursor:pointer;flex-shrink:0;margin-left:10px;}
 #infoBtn:hover{background:var(--accent);border-color:var(--accent);}
 #main{display:flex;flex:1;min-height:0;}
-#sidebar{width:305px;background:#fff;border-right:1px solid #d7e2ee;overflow-y:auto;padding:12px;flex-shrink:0;}
+#sidebar{width:300px;background:#fff;border-right:1px solid #d7e2ee;overflow-y:auto;padding:12px;flex-shrink:0;}
 #map{flex:1;}
+#fleetbar{width:228px;background:#fff;border-left:1px solid #d7e2ee;overflow-y:auto;padding:12px;flex-shrink:0;display:none;}
+#fleetbar h3{font-size:13px;color:var(--navy);margin-bottom:3px;}
+#fleetbar .sub2{font-size:10.5px;color:#789;margin-bottom:9px;}
+.fl-row{display:flex;align-items:center;gap:7px;border:1px solid #e2eaf3;border-radius:9px;padding:7px 8px;margin-bottom:7px;}
+.fl-ic{font-size:22px;}
+.fl-info{flex:1;font-size:10.5px;line-height:1.35;color:#3d5570;}
+.fl-info b{display:block;font-size:11.5px;color:var(--navy);}
+.fl-ctl{display:flex;align-items:center;gap:4px;}
+.fl-ctl button{width:22px;height:22px;border-radius:6px;border:1px solid #c8d6e6;background:var(--light);cursor:pointer;font-size:14px;line-height:1;color:var(--navy);}
+.fl-ctl b{min-width:16px;text-align:center;font-size:13px;}
+#fleetSum{font-size:11.5px;color:var(--navy);font-weight:700;margin:4px 0 8px;}
+#fleetMsg{font-size:11px;color:#789;margin-top:6px;text-align:center;}
 .group{margin-bottom:14px;border:1px solid #e2eaf3;border-radius:8px;overflow:hidden;}
 .group h3{background:var(--light);padding:7px 10px;font-size:12.5px;color:var(--navy);}
 .group .items{padding:6px 10px;}
@@ -33,7 +45,7 @@ header .sub{font-size:11px;opacity:.75;}
 .sw.pt{border-radius:50%;}
 #yearBox{padding:6px 10px 10px;}
 select{width:100%;padding:6px;border:1px solid #c8d6e6;border-radius:6px;font-size:13px;background:#fff;}
-.hint{font-size:11px;color:#789;margin-top:5px;}
+.hint{font-size:11px;color:#789;margin-top:5px;line-height:1.5;}
 .note{font-size:11px;color:#68809a;background:var(--light);border-radius:8px;padding:9px 11px;line-height:1.55;}
 #loading{position:absolute;top:70px;right:14px;background:#fff;padding:6px 14px;border-radius:20px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:1000;display:none;}
 .leaflet-popup-content{font-size:12.5px;line-height:1.5;}
@@ -47,23 +59,22 @@ footer{background:var(--navy);color:#9fb8d2;font-size:10.5px;padding:4px 16px;fl
 .btn.pin.arm{background:#fff3cd;border-color:#e8a600;color:#7a5c00;}
 .btn.go{background:var(--accent);color:#fff;font-size:14px;padding:11px;}
 .btn.go:disabled{background:#c9d4e0;cursor:not-allowed;}
+.btn.save{background:var(--green);color:#fff;}
 .route-card{border:1.5px solid #e2eaf3;border-radius:9px;padding:9px 11px;margin-bottom:8px;cursor:pointer;font-size:12px;line-height:1.55;}
 .route-card:hover{border-color:var(--blue);}
-.route-card.best{border-color:var(--green);background:#f0fbf7;}
 .route-card.sel{border-color:var(--accent);box-shadow:0 0 0 2px rgba(232,96,76,.25);}
 .route-card .dst{font-weight:700;color:var(--navy);font-size:12.5px;}
 .route-card .meta{color:#5a7591;}
-.veh{display:inline-block;background:var(--light);border-radius:10px;padding:1px 8px;font-size:11px;margin:3px 3px 0 0;color:#2c4a68;}
-.veh.warn{background:#fdecea;color:#b03a2e;}
 .gmap{display:inline-block;margin-top:5px;font-size:11.5px;color:var(--blue);text-decoration:none;font-weight:600;}
-.tagbest{background:var(--green);color:#fff;font-size:10px;border-radius:8px;padding:1px 7px;margin-left:5px;}
 .tagflood{background:#e8604c;color:#fff;font-size:10px;border-radius:8px;padding:1px 7px;margin-left:5px;}
+.pt-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:4px 7px;border:1px solid #e9eff7;border-radius:7px;margin-top:5px;}
+.pt-row button{border:none;background:#fdecea;color:#b03a2e;border-radius:5px;width:20px;height:20px;cursor:pointer;font-size:11px;}
 #status2{font-size:11.5px;color:#68809a;margin-top:6px;line-height:1.5;}
 #infoModal{display:none;position:fixed;inset:0;background:rgba(10,25,45,.8);z-index:3000;}
 #infoModal.open{display:block;}
 #infoModal iframe{position:absolute;inset:4% 5%;width:90%;height:92%;border:none;border-radius:12px;background:#0f2438;}
 #infoModal .close{position:absolute;top:calc(4% + 10px);right:calc(5% + 10px);width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:17px;cursor:pointer;z-index:3001;}
-@media(max-width:700px){#sidebar{width:235px;}}
+@media(max-width:900px){#sidebar{width:230px;}#fleetbar{width:190px;}}
 </style>
 </head>
 <body>
@@ -74,7 +85,7 @@ footer{background:var(--navy);color:#9fb8d2;font-size:10.5px;padding:4px 16px;fl
   </div>
   <div class="tabs">
     <button class="tab" id="tab1" onclick="showPhase(1)">Phase I (Big Data)</button>
-    <button class="tab active" id="tab2" onclick="showPhase(2)">Phase II (Analyse Data) <span class="badge g">ใหม่</span></button>
+    <button class="tab active" id="tab2" onclick="showPhase(2)">Phase II (Analyse Data) <span class="badge g">Mission Planner</span></button>
   </div>
   <button id="infoBtn" title="ข้อมูลโครงการ (Presentation)" onclick="document.getElementById('infoModal').classList.add('open')">i</button>
 </header>
@@ -93,39 +104,50 @@ footer{background:var(--navy);color:#9fb8d2;font-size:10.5px;padding:4px 16px;fl
     </div>
     <div id="panel2">
       <div class="p2step">
-        <h3><span class="n">1</span>กำหนดตำแหน่งผู้ป่วย</h3>
-        <button class="btn pin" id="pinBtn" onclick="armPin()">📍 คลิกปุ่มนี้ แล้วคลิกบนแผนที่</button>
-        <div class="hint" id="pinHint">ยังไม่ได้ปักหมุด — ลากหมุดปรับตำแหน่งได้หลังปัก</div>
-        <div style="margin-top:8px">
-          <select id="sevSel">
-            <option value="red">🔴 ผู้ป่วยวิกฤต (ติดเตียง/ใช้เครื่องมือแพทย์)</option>
-            <option value="yellow" selected>🟡 ผู้ป่วยปานกลาง (โรคเรื้อรัง/สูงอายุ)</option>
-            <option value="green">🟢 ผู้ป่วยทั่วไป</option>
-          </select>
-        </div>
+        <h3><span class="n">1</span>จุดเริ่มต้น: รพ.ปลอดภัย / ศูนย์พักพิง</h3>
+        <button class="btn pin" id="baseBtn" onclick="armBase()">🏥 คลิกปุ่ม แล้วคลิกแผนที่</button>
+        <div class="hint" id="baseHint">คลิกใกล้โรงพยาบาลที่ไม่ถูกน้ำท่วมเพื่อใช้เป็นฐาน หรือคลิกจุดอื่นเพื่อตั้งเป็นศูนย์พักพิง</div>
       </div>
       <div class="p2step">
-        <h3><span class="n">2</span>สถานการณ์น้ำท่วมที่ใช้ประเมิน</h3>
+        <h3><span class="n">2</span>ตำแหน่งผู้ป่วย (เพิ่มได้หลายคน)</h3>
+        <select id="sevSel">
+          <option value="red">🔴 ผู้ป่วยวิกฤต (ติดเตียง/เครื่องมือแพทย์)</option>
+          <option value="yellow" selected>🟡 ผู้ป่วยปานกลาง (โรคเรื้อรัง/สูงอายุ)</option>
+          <option value="green">🟢 ผู้ป่วยทั่วไป</option>
+        </select>
+        <button class="btn pin" id="ptBtn" onclick="armPatient()" style="margin-top:7px">➕ เพิ่มผู้ป่วย: คลิกแผนที่</button>
+        <div id="ptList"><div class="hint">ยังไม่มีผู้ป่วย</div></div>
+      </div>
+      <div class="p2step">
+        <h3><span class="n">3</span>สถานการณ์น้ำท่วมที่ใช้ประเมิน</h3>
         <select id="hazSel"></select>
-        <div class="hint">ปัจจุบันใช้แผนที่น้ำท่วมในอดีต — อนาคตจะใช้ risk map จากภัย × ความเปราะบาง (Tr2–Tr100)</div>
+        <div class="hint">อนาคตจะใช้ risk map จากภัย × ความเปราะบาง (Tr2–Tr100)</div>
       </div>
       <div class="p2step">
-        <h3><span class="n">3</span>ค้นหาเส้นทาง</h3>
-        <button class="btn go" id="goBtn" onclick="findRoutes()" disabled>🚨 หาเส้นทางหนีภัยที่เหมาะสมที่สุด</button>
+        <h3><span class="n">4</span>วางแผนภารกิจ</h3>
+        <button class="btn go" id="goBtn" onclick="planMission()" disabled>🚨 วางแผนรับผู้ป่วย (เส้นทาง + ยานพาหนะ)</button>
         <div id="status2"></div>
       </div>
       <div id="results"></div>
-      <div class="note">เส้นทางคำนวณด้วย OSRM (โครงข่ายถนน OpenStreetMap) และตรวจสอบการตัดผ่านพื้นที่น้ำท่วมเพื่อแนะนำยานพาหนะ • ปุ่ม "นำทาง Google Maps" เปิดการนำทางจริงบนมือถือได้ทันที</div>
+      <div class="note">ระบบจัดผู้ป่วยตามความรุนแรงและความจุยานพาหนะ — ถ้ารับไม่หมดในเที่ยวเดียวจะวางแผนส่งที่ฐานแล้ววนกลับไปรับรอบถัดไป • เส้นทางจาก OSRM • ตรวจการตัดผ่านน้ำท่วมเพื่อเลือกยานพาหนะ</div>
     </div>
   </div>
   <div id="map"></div>
+  <div id="fleetbar">
+    <h3>🚙 ยานพาหนะที่มี</h3>
+    <div class="sub2">กด + / − กำหนดจำนวน แล้วกด Save</div>
+    <div id="fleetList"></div>
+    <div id="fleetSum"></div>
+    <button class="btn save" onclick="saveFleet()">💾 Save</button>
+    <div id="fleetMsg"></div>
+  </div>
 </div>
 <div id="loading">⏳ กำลังโหลดข้อมูล…</div>
 <div id="infoModal">
   <iframe src="presentation.html" loading="lazy"></iframe>
   <button class="close" onclick="document.getElementById('infoModal').classList.remove('open')">✕</button>
 </div>
-<footer>Phase I: Big Data | Phase II: Analyse Data — Routing & Vehicle Advisory | ข้อมูล: GISTDA, สธ., พด., สทนช. | จัดทำเพื่อสนับสนุน อสม. จ.ปทุมธานี</footer>
+<footer>Phase I: Big Data | Phase II: Mission Planner — Multi-patient Pickup Routing & Fleet Advisory | ข้อมูล: GISTDA, สธ., พด., สทนช. | จัดทำเพื่อสนับสนุน อสม. จ.ปทุมธานี</footer>
 <script>
 const map = L.map('map').setView([14.05, 100.65], 11);
 const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'© OpenStreetMap'}).addTo(map);
@@ -206,144 +228,199 @@ async function loadFlood(){
 sel.addEventListener('change', loadFlood);
 document.getElementById('cb_flood').addEventListener('change', loadFlood);
 
-// ==================== PHASE II ====================
+// ==================== PHASE II : MISSION PLANNER ====================
 const hazSel = document.getElementById('hazSel');
 [...FLOOD_YEARS].reverse().forEach(y=>{ const o=document.createElement('option'); o.value=y; o.textContent='น้ำท่วมปี พ.ศ. '+(y+543)+' (ค.ศ. '+y+')'; hazSel.appendChild(o); });
 hazSel.value = 2011;
 
-let patientMarker=null, pinArmed=false, hazLayer=null, routeLayers=[], routesData=[];
-const patientIcon = L.divIcon({html:'<div style="font-size:30px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))">🧍</div>',className:'',iconSize:[30,34],iconAnchor:[15,32]});
+// ---------- fleet (right bar) ----------
+const VEHICLES=[
+ {id:'amb',icon:'🚑',name:'รถพยาบาล',cap:2,cls:1,clsTxt:'ลุยน้ำตื้นช่วงสั้น'},
+ {id:'car',icon:'🚗',name:'รถยนต์ทั่วไป',cap:4,cls:0,clsTxt:'ถนนแห้งเท่านั้น'},
+ {id:'pkp',icon:'🛻',name:'รถกระบะยกสูง',cap:6,cls:2,clsTxt:'น้ำท่วมปานกลาง'},
+ {id:'trk',icon:'🚛',name:'รถทหาร/บรรทุก',cap:12,cls:3,clsTxt:'น้ำลึก/ท่วมยาว'},
+ {id:'bot',icon:'🚤',name:'เรือท้องแบน',cap:5,cls:4,clsTxt:'พื้นที่น้ำท่วมหนัก'}];
+let fleet={amb:1,car:1,pkp:1,trk:0,bot:0};
+try{ const s=localStorage.getItem('fleet_pathum'); if(s) fleet=Object.assign(fleet,JSON.parse(s)); }catch(e){}
+function fleetCap(){ return VEHICLES.reduce((s,v)=>s+v.cap*(fleet[v.id]||0),0); }
+function renderFleet(){
+  const box=document.getElementById('fleetList'); box.innerHTML='';
+  VEHICLES.forEach(v=>{
+    const d=document.createElement('div'); d.className='fl-row';
+    d.innerHTML=`<div class="fl-ic">${v.icon}</div><div class="fl-info"><b>${v.name}</b>รับ ${v.cap} คน/เที่ยว<br>${v.clsTxt}</div>
+      <div class="fl-ctl"><button onclick="chFleet('${v.id}',-1)">−</button><b id="fn_${v.id}">${fleet[v.id]||0}</b><button onclick="chFleet('${v.id}',1)">+</button></div>`;
+    box.appendChild(d);
+  });
+  updateFleetSum();
+}
+function updateFleetSum(){ document.getElementById('fleetSum').textContent='ความจุรวม '+fleetCap()+' คน/รอบ'; }
+function chFleet(id,d){ fleet[id]=Math.max(0,(fleet[id]||0)+d); document.getElementById('fn_'+id).textContent=fleet[id]; updateFleetSum(); document.getElementById('fleetMsg').textContent='ยังไม่ได้บันทึก'; }
+function saveFleet(){ try{ localStorage.setItem('fleet_pathum', JSON.stringify(fleet)); document.getElementById('fleetMsg').textContent='✅ บันทึกแล้ว'; }catch(e){ document.getElementById('fleetMsg').textContent='⚠️ บันทึกในเครื่องไม่ได้'; } }
+renderFleet();
 
-function armPin(){
-  pinArmed = true;
-  const b=document.getElementById('pinBtn'); b.classList.add('arm'); b.textContent='👆 คลิกตำแหน่งผู้ป่วยบนแผนที่…';
-  map.getContainer().style.cursor='crosshair';
+// ---------- base & patients ----------
+let armMode=null, base=null, baseMarker=null, patients=[], hazLayer=null, tripLayers=[];
+const sevMeta={red:{ic:'🔴',t:'วิกฤต',rank:0,color:'#d63031'},yellow:{ic:'🟡',t:'ปานกลาง',rank:1,color:'#e8a600'},green:{ic:'🟢',t:'ทั่วไป',rank:2,color:'#00b894'}};
+function armBase(){ armMode = armMode==='base' ? null : 'base'; setArmUI(); }
+function armPatient(){ armMode = armMode==='patient' ? null : 'patient'; setArmUI(); }
+function setArmUI(){
+  const bb=document.getElementById('baseBtn'), pb=document.getElementById('ptBtn');
+  bb.classList.toggle('arm', armMode==='base'); pb.classList.toggle('arm', armMode==='patient');
+  bb.textContent = armMode==='base' ? '👆 คลิกตำแหน่งฐานบนแผนที่…' : (base?'🏥 เปลี่ยนจุดเริ่มต้น':'🏥 คลิกปุ่ม แล้วคลิกแผนที่');
+  pb.textContent = armMode==='patient' ? '👆 คลิกแผนที่เพิ่มผู้ป่วย (กดปุ่มนี้อีกครั้งเพื่อหยุด)' : '➕ เพิ่มผู้ป่วย: คลิกแผนที่';
+  map.getContainer().style.cursor = armMode?'crosshair':'';
 }
-map.on('click', e=>{
-  if(!pinArmed) return;
-  pinArmed=false; map.getContainer().style.cursor='';
-  const b=document.getElementById('pinBtn'); b.classList.remove('arm'); b.textContent='📍 ปักหมุดใหม่';
-  setPatient(e.latlng);
+map.on('click', async e=>{
+  if(!armMode) return;
+  if(armMode==='base'){ armMode=null; await setBase(e.latlng); setArmUI(); }
+  else addPatient(e.latlng);
 });
-function setPatient(latlng){
-  if(patientMarker) map.removeLayer(patientMarker);
-  patientMarker = L.marker(latlng, {icon:patientIcon, draggable:true}).addTo(map)
-    .bindPopup('ตำแหน่งผู้ป่วย (ลากเพื่อปรับ)');
-  patientMarker.on('dragend', ()=>updatePinHint());
-  updatePinHint();
-  document.getElementById('goBtn').disabled=false;
+async function getHaz(){ return await getData('flood_'+hazSel.value+'.geojson'); }
+async function setBase(ll){
+  const hosp=await getData('hospital.geojson'); const haz=await getHaz();
+  const feats=haz.features||[];
+  let best=null,bd=1e9;
+  hosp.features.forEach(f=>{const c=f.geometry.coordinates; const d=turf.distance(turf.point([ll.lng,ll.lat]),turf.point(c)); if(d<bd){bd=d;best=f;}});
+  let name='ศูนย์พักพิง (กำหนดเอง)', icon='🏕️', pos=ll;
+  if(best && bd<=0.6){
+    const c=best.geometry.coordinates;
+    const fl=feats.some(ff=>turf.booleanPointInPolygon(turf.point(c),ff));
+    if(!fl){ name=best.properties.Agency||'สถานพยาบาล'; icon='🏥'; pos=L.latLng(c[1],c[0]); }
+  }
+  const inFlood=feats.some(ff=>turf.booleanPointInPolygon(turf.point([pos.lng,pos.lat]),ff));
+  base={lat:pos.lat,lng:pos.lng,name};
+  if(baseMarker) map.removeLayer(baseMarker);
+  baseMarker=L.marker(pos,{icon:L.divIcon({html:'<div style="font-size:27px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))">'+icon+'</div>',className:'',iconSize:[27,31],iconAnchor:[13,29]}),draggable:true}).addTo(map).bindPopup('จุดเริ่มต้น: '+name);
+  baseMarker.on('dragend',()=>{const p=baseMarker.getLatLng(); base.lat=p.lat; base.lng=p.lng;});
+  document.getElementById('baseHint').innerHTML=(inFlood?'<span style="color:#c0392b">⚠️ จุดนี้อยู่ในเขตน้ำท่วมปี '+hazSel.value+' — ควรเลือกจุดที่ปลอดภัย</span><br>':'')+'✅ ฐาน: <b>'+name+'</b>';
+  updateGo();
 }
-function updatePinHint(){
-  const ll=patientMarker.getLatLng();
-  document.getElementById('pinHint').innerHTML='✅ ผู้ป่วยที่ <b>'+ll.lat.toFixed(5)+', '+ll.lng.toFixed(5)+'</b> (ลากหมุดปรับได้)';
+function ptIcon(id,sev){ return L.divIcon({html:`<div style="background:${sevMeta[sev].color};color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:11px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);font-weight:700">${id}</div>`,className:'',iconSize:[24,24],iconAnchor:[12,12]}); }
+function addPatient(ll){
+  const sev=document.getElementById('sevSel').value;
+  const id=patients.length? Math.max(...patients.map(p=>p.id))+1 : 1;
+  const m=L.marker(ll,{icon:ptIcon(id,sev),draggable:true}).addTo(map).bindPopup('ผู้ป่วย #'+id+' ('+sevMeta[sev].t+')');
+  const p={id,lat:ll.lat,lng:ll.lng,sev,m};
+  m.on('dragend',()=>{const q=m.getLatLng(); p.lat=q.lat; p.lng=q.lng;});
+  patients.push(p); renderPtList(); updateGo();
 }
+function delPatient(id){ const i=patients.findIndex(p=>p.id===id); if(i>=0){ map.removeLayer(patients[i].m); patients.splice(i,1); renderPtList(); updateGo(); } }
+function renderPtList(){
+  document.getElementById('ptList').innerHTML = patients.length
+    ? patients.map(p=>`<div class="pt-row"><span>${sevMeta[p.sev].ic} ผู้ป่วย #${p.id} <small>(${sevMeta[p.sev].t})</small></span><button onclick="delPatient(${p.id})">✕</button></div>`).join('')
+    : '<div class="hint">ยังไม่มีผู้ป่วย</div>';
+}
+function updateGo(){ document.getElementById('goBtn').disabled = !(base && patients.length); }
 
 async function showHazard(){
   if(hazLayer){ map.removeLayer(hazLayer); hazLayer=null; }
-  const gj = await getData('flood_'+hazSel.value+'.geojson');
+  const gj = await getHaz();
   if(gj.features && gj.features.length)
     hazLayer = L.geoJSON(gj, {style:{color:'#1e5ba8',weight:.6,fillColor:'#3b7dd8',fillOpacity:.42},interactive:false}).addTo(map);
   return gj;
 }
 hazSel.addEventListener('change', ()=>{ if(document.getElementById('panel2').style.display!=='none') showHazard(); });
 
-function clearRoutes(){ routeLayers.forEach(l=>map.removeLayer(l)); routeLayers=[]; routesData=[]; document.getElementById('results').innerHTML=''; }
-
+// ---------- planning ----------
 function assessFlood(routeCoords, floodFeats){
   const line = turf.lineString(routeCoords);
   const lenKm = turf.length(line);
   const step = Math.max(0.1, lenKm/120);
-  let hit = 0, total = 0;
+  let hit=0, total=0;
   for(let d=0; d<=lenKm; d+=step){
     const pt = turf.along(line, d); total++;
     for(const f of floodFeats){ if(turf.booleanPointInPolygon(pt, f)){ hit++; break; } }
   }
   return {floodKm: lenKm*hit/Math.max(total,1), lenKm};
 }
-function vehiclesFor(fKm, dstFlooded){
-  if(dstFlooded) return {list:['🚤 เรือ (จุดหมายอยู่ในเขตน้ำท่วม)'], cls:'warn', label:'ต้องใช้เรือ'};
-  if(fKm===0)   return {list:['🚑 รถพยาบาล','🚗 รถยนต์ทั่วไป','🏍️ จักรยานยนต์'], cls:'', label:'ถนนแห้งตลอดเส้นทาง'};
-  if(fKm<0.5)   return {list:['🚑 รถพยาบาล (ระวังช่วงน้ำท่วม)','🛻 รถกระบะ/รถยกสูง'], cls:'', label:'ผ่านเขตน้ำท่วมช่วงสั้น ~'+(fKm*1000).toFixed(0)+' ม.'};
-  if(fKm<2)     return {list:['🛻 รถยกสูง','🚛 รถทหาร/รถบรรทุกใหญ่'], cls:'warn', label:'ผ่านเขตน้ำท่วม ~'+fKm.toFixed(1)+' กม.'};
-  return {list:['🚛 รถทหาร','🚤 เรือท้องแบน (บางช่วง)'], cls:'warn', label:'ผ่านเขตน้ำท่วมยาว ~'+fKm.toFixed(1)+' กม.'};
+function clsNeeded(fKm){ return fKm===0?0 : fKm<0.5?1 : fKm<2?2 : 3; }
+function clsLabel(fKm){ return fKm===0?'ถนนแห้งตลอด' : 'ผ่านน้ำท่วม ~'+(fKm<1?(fKm*1000).toFixed(0)+' ม.':fKm.toFixed(1)+' กม.'); }
+function dist2(a,b){ return (a.lat-b.lat)*(a.lat-b.lat)+(a.lng-b.lng)*(a.lng-b.lng); }
+function nnOrder(from, pts){
+  const rest=[...pts], out=[]; let cur=from;
+  while(rest.length){ let bi=0,bd=1e18; rest.forEach((p,i)=>{const d=dist2(p,cur); if(d<bd){bd=d;bi=i;}}); cur=rest.splice(bi,1)[0]; out.push(cur); }
+  return out;
 }
+async function osrmRoute(points){
+  const q=points.map(p=>p.lng+','+p.lat).join(';')+'?overview=full&geometries=geojson';
+  for(const b of ['https://routing.openstreetmap.de/routed-car/route/v1/driving/','https://router.project-osrm.org/route/v1/driving/']){
+    try{ const r=await fetch(b+q); const j=await r.json(); if(j.code==='Ok'&&j.routes.length) return j.routes[0]; }catch(e){}
+  }
+  return null;
+}
+const TRIP_COLORS=['#00b894','#e17055','#6c5ce7','#e84393','#f39c12','#00cec9','#d63031','#2f6db3'];
+function clearTrips(){ tripLayers.forEach(l=>map.removeLayer(l)); tripLayers=[]; document.getElementById('results').innerHTML=''; }
 
-async function findRoutes(){
-  if(!patientMarker) return;
-  const status = document.getElementById('status2');
-  const goBtn = document.getElementById('goBtn');
-  goBtn.disabled = true; clearRoutes();
+async function planMission(){
+  const status=document.getElementById('status2'); const goBtn=document.getElementById('goBtn');
+  if(fleetCap()===0){ status.innerHTML='❌ ยังไม่ได้กำหนดยานพาหนะ — กด + ในแถบขวา แล้วกด Save'; return; }
+  goBtn.disabled=true; clearTrips();
   try{
-    status.textContent = '⏳ โหลดข้อมูลสถานการณ์น้ำท่วม…';
-    const [hosp, floodGj] = await Promise.all([getData('hospital.geojson'), showHazard()]);
-    const floodFeats = (floodGj.features||[]);
-    const p = patientMarker.getLatLng();
-    const pPt = turf.point([p.lng, p.lat]);
-    const patientFlooded = floodFeats.some(f=>turf.booleanPointInPolygon(pPt,f));
-    const cands = hosp.features.map(f=>{
-      const c=f.geometry.coordinates;
-      return {name:f.properties.Agency||'สถานพยาบาล', dept:f.properties.Department||'', lat:c[1], lng:c[0],
-        dist:turf.distance(pPt, turf.point(c)),
-        flooded: floodFeats.some(ff=>turf.booleanPointInPolygon(turf.point(c),ff))};
-    }).sort((a,b)=>a.dist-b.dist);
-    const safe = cands.filter(c=>!c.flooded).slice(0,4);
-    const near = cands.slice(0,2).filter(c=>!safe.includes(c));
-    const targets = [...safe, ...near].slice(0,5);
-    status.textContent = '⏳ คำนวณเส้นทาง '+targets.length+' ปลายทาง (OSRM)…';
-    const results = [];
-    for(const t of targets){
-      try{
-        const q = `${p.lng},${p.lat};${t.lng},${t.lat}?overview=full&geometries=geojson`;
-        let j = null;
-        for(const base of ['https://routing.openstreetmap.de/routed-car/route/v1/driving/','https://router.project-osrm.org/route/v1/driving/']){
-          try{ const r = await fetch(base+q); j = await r.json(); if(j.code==='Ok') break; }catch(e){ j=null; }
-        }
-        if(!j || j.code!=='Ok' || !j.routes.length) continue;
-        const rt = j.routes[0];
-        const {floodKm} = assessFlood(rt.geometry.coordinates, floodFeats);
-        results.push({t, rt, floodKm});
-      }catch(e){}
+    status.textContent='⏳ โหลดสถานการณ์น้ำท่วม…';
+    const haz=await showHazard(); const feats=haz.features||[];
+    const ordered=[...patients].sort((a,b)=>(sevMeta[a.sev].rank-sevMeta[b.sev].rank)||(dist2(base,a)-dist2(base,b)));
+    let remaining=[...ordered];
+    const trips=[]; const useCnt={};
+    const avail=VEHICLES.filter(v=>(fleet[v.id]||0)>0).sort((a,b)=>b.cap-a.cap);
+    let guard=0;
+    while(remaining.length && guard++<10){
+      status.textContent='⏳ วางแผนเที่ยวที่ '+(trips.length+1)+'… (เหลือผู้ป่วยอีก '+remaining.length+' คน)';
+      let planned=null, fallback=null;
+      for(const v of avail){
+        const pts=nnOrder(base, remaining.slice(0, Math.min(v.cap, remaining.length)));
+        const rt=await osrmRoute([base,...pts,base]);
+        if(!rt) continue;
+        const {floodKm}=assessFlood(rt.geometry.coordinates, feats);
+        const cand={v,pts,rt,floodKm,need:clsNeeded(floodKm)};
+        if(v.cls>=cand.need){ planned=cand; break; }
+        if(!fallback || v.cls>fallback.v.cls) fallback=cand;
+      }
+      if(!planned){
+        if(!fallback){ status.innerHTML='❌ คำนวณเส้นทางไม่สำเร็จ (OSRM ไม่ตอบสนอง) — ลองใหม่อีกครั้ง'; return; }
+        planned=fallback; planned.warn=true;
+      }
+      useCnt[planned.v.id]=(useCnt[planned.v.id]||0)+1;
+      const nUnit=fleet[planned.v.id]||1;
+      planned.unit=planned.v.name+' #'+(((useCnt[planned.v.id]-1)%nUnit)+1);
+      planned.round=Math.ceil(useCnt[planned.v.id]/nUnit);
+      trips.push(planned);
+      const ids=new Set(planned.pts.map(p=>p.id));
+      remaining=remaining.filter(p=>!ids.has(p.id));
     }
-    if(!results.length){ status.innerHTML='❌ คำนวณเส้นทางไม่สำเร็จ (บริการ OSRM อาจไม่ตอบสนอง) — ลองใหม่อีกครั้ง'; return; }
-    results.sort((a,b)=> (a.t.flooded-b.t.flooded) || (a.floodKm-b.floodKm) || (a.rt.duration-b.rt.duration));
-    const sev = document.getElementById('sevSel').value;
-    const resBox = document.getElementById('results');
-    let html = patientFlooded ? '<div class="note" style="margin-bottom:8px;background:#fdecea;color:#b03a2e">⚠️ ตำแหน่งผู้ป่วยอยู่ในเขตน้ำท่วม '+hazSel.value+' — การเข้าถึงจุดแรกอาจต้องใช้เรือ</div>' : '';
-    if(sev==='red') html += '<div class="note" style="margin-bottom:8px;background:#fff3cd;color:#7a5c00">🔴 ผู้ป่วยวิกฤต: แนะนำเส้นทางเร็วที่สุดที่ปลายทางปลอดภัย + ประสาน 1669</div>';
-    results.forEach((res,i)=>{
-      const veh = vehiclesFor(res.floodKm, res.t.flooded);
-      const gurl = `https://www.google.com/maps/dir/?api=1&origin=${p.lat},${p.lng}&destination=${res.t.lat},${res.t.lng}&travelmode=driving`;
-      html += `<div class="route-card ${i===0?'best':''}" id="rc${i}" onclick="focusRoute(${i})">
-        <div class="dst">${i+1}. ${res.t.name}${i===0?'<span class="tagbest">แนะนำ</span>':''}${res.t.flooded?'<span class="tagflood">รพ.ในเขตน้ำท่วม</span>':''}</div>
-        <div class="meta">🚗 ${(res.rt.distance/1000).toFixed(1)} กม. · ⏱ ~${Math.round(res.rt.duration/60)} นาที · ${veh.label}</div>
-        <div>${veh.list.map(v=>`<span class="veh ${veh.cls}">${v}</span>`).join('')}</div>
-        <a class="gmap" href="${gurl}" target="_blank" onclick="event.stopPropagation()">🗺️ นำทางด้วย Google Maps →</a>
-      </div>`;
-      const col = i===0 ? '#00b894' : '#7f8fa6';
-      const lyr = L.geoJSON(res.rt.geometry, {style:{color:col, weight:i===0?6:3.5, opacity:i===0?.95:.65, dashArray:i===0?null:'7 6'}})
-        .bindPopup(`<b>${res.t.name}</b><br>${(res.rt.distance/1000).toFixed(1)} กม. · ~${Math.round(res.rt.duration/60)} นาที<br>${veh.label}`);
-      lyr.addTo(map); routeLayers.push(lyr);
-      const hIcon = L.divIcon({html:`<div style="background:${res.t.flooded?'#e8604c':'#00b894'};color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);font-weight:700">${i+1}</div>`,className:'',iconSize:[24,24],iconAnchor:[12,12]});
-      const mk = L.marker([res.t.lat,res.t.lng],{icon:hIcon}).bindPopup('<b>'+res.t.name+'</b><br>'+res.t.dept).addTo(map);
-      routeLayers.push(mk);
-    });
-    resBox.innerHTML = html;
-    routesData = results;
-    const all = L.featureGroup(routeLayers); map.fitBounds(all.getBounds().pad(0.15));
-    status.innerHTML = '✅ พบ '+results.length+' เส้นทาง — เรียงตามความปลอดภัยและเวลาเดินทาง (ประเมินจากน้ำท่วมปี '+hazSel.value+')';
-  } finally { goBtn.disabled=false; }
+    renderTrips(trips);
+  } finally { goBtn.disabled=false; updateGo(); }
 }
-function focusRoute(i){
+function renderTrips(trips){
+  const box=document.getElementById('results');
+  let html='<div class="note" style="margin-bottom:8px">📋 ผู้ป่วย '+patients.length+' คน · ความจุรวม '+fleetCap()+' คน/รอบ → ใช้ <b>'+trips.length+'</b> เที่ยว'+(trips.some(t=>t.round>1)?' · <b style="color:#b03a2e">มีการส่งผู้ป่วยที่ฐานแล้ววนกลับไปรับรอบถัดไป</b>':'')+'</div>';
+  trips.forEach((t,i)=>{
+    const col=TRIP_COLORS[i%TRIP_COLORS.length];
+    const wp=t.pts.map(p=>p.lat+','+p.lng).join('|');
+    const g='https://www.google.com/maps/dir/?api=1&origin='+base.lat+','+base.lng+'&destination='+base.lat+','+base.lng+'&waypoints='+encodeURIComponent(wp)+'&travelmode=driving';
+    html+=`<div class="route-card" style="border-left:5px solid ${col}" onclick="focusTrip(${i})">
+      <div class="dst">เที่ยวที่ ${i+1} · ${t.v.icon} ${t.unit}${t.round>1?' <small>(รอบที่ '+t.round+')</small>':''}${t.warn?'<span class="tagflood">ไม่มีคันที่เหมาะ — เสี่ยง</span>':''}</div>
+      <div class="meta">รับ: ${t.pts.map(p=>sevMeta[p.sev].ic+'#'+p.id).join(', ')} &nbsp;(${t.pts.length}/${t.v.cap} ที่นั่ง)</div>
+      <div class="meta">📏 ${(t.rt.distance/1000).toFixed(1)} กม. · ⏱ ~${Math.round(t.rt.duration/60)} นาที · ${clsLabel(t.floodKm)}</div>
+      <a class="gmap" href="${g}" target="_blank" onclick="event.stopPropagation()">🗺️ นำทางด้วย Google Maps →</a></div>`;
+    const lyr=L.geoJSON(t.rt.geometry,{style:{color:col,weight:5,opacity:.85}}).bindPopup('เที่ยวที่ '+(i+1)+' · '+t.v.icon+' '+t.unit+'<br>รับผู้ป่วย '+t.pts.length+' คน');
+    lyr.addTo(map); tripLayers.push(lyr);
+  });
+  box.innerHTML=html;
+  if(tripLayers.length) map.fitBounds(L.featureGroup(tripLayers).getBounds().pad(0.15));
+  document.getElementById('status2').innerHTML='✅ วางแผนสำเร็จ '+trips.length+' เที่ยว (ประเมินจากน้ำท่วมปี '+hazSel.value+')';
+}
+function focusTrip(i){
   document.querySelectorAll('.route-card').forEach((c,j)=>c.classList.toggle('sel', j===i));
-  const lyr = routeLayers[i*2];
-  if(lyr){ map.fitBounds(lyr.getBounds().pad(0.2)); lyr.openPopup(); }
+  const l=tripLayers[i]; if(l){ map.fitBounds(l.getBounds().pad(0.2)); l.openPopup(); }
 }
 
+// ---------- phase switching ----------
 function showPhase(n){
   document.getElementById('tab1').classList.toggle('active', n===1);
   document.getElementById('tab2').classList.toggle('active', n===2);
   document.getElementById('panel1').style.display = n===1?'block':'none';
   document.getElementById('panel2').style.display = n===2?'block':'none';
+  document.getElementById('fleetbar').style.display = n===2?'block':'none';
   if(n===1){ if(hazLayer){map.removeLayer(hazLayer); hazLayer=null;} loadFlood(); }
   else { if(floodLayer){map.removeLayer(floodLayer); floodLayer=null;} showHazard(); }
   setTimeout(()=>map.invalidateSize(), 60);
